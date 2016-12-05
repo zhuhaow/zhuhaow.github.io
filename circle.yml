@@ -6,7 +6,7 @@ machine:
     version: 2.3.1
 
 dependencies:
-  pre:
+  override:
     - ./bin/setup
 
 test:
