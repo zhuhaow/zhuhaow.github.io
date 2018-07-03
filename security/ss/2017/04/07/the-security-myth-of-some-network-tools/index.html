@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html>
+<head>
+    
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>某些网络工具的安全性 &#8211; Samples</title>
+    <link rel="dns-prefetch" href="//maxcdn.bootstrapcdn.com">
+    <link rel="dns-prefetch" href="//cdn.mathjax.org">
+    <link rel="dns-prefetch" href="//cdnjs.cloudflare.com">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Just some random thoughts.">
+    <meta name="robots" content="all">
+    <meta name="author" content="Zhuhao Wang">
+    
+    <meta name="keywords" content="security, ss">
+    <link rel="canonical" href="https://blog.zhuhaow.me/security/ss/2017/04/07/the-security-myth-of-some-network-tools/">
+    <link rel="alternate" type="application/rss+xml" title="RSS Feed for Samples" href="/feed.xml" />
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/pixyll.css?201807031005" type="text/css">
+
+    <!-- Fonts -->
+    
+    <link href='//fonts.googleapis.com/css?family=Merriweather:900,900italic,300,300italic&subset=latin-ext,latin' rel='stylesheet' type='text/css'>
+    <link href='//fonts.googleapis.com/css?family=Lato:900,300&subset=latin-ext,latin' rel='stylesheet' type='text/css'>
+    
+    
+      <link href="//maxcdn.bootstrapcdn.com/font-awesome/latest/css/font-awesome.min.css" rel="stylesheet">
+    
+
+    <!-- MathJax -->
+    
+      <script type="text/javascript" src="//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+      </script>
+      
+
+    <!-- Verifications -->
+    
+    
+
+    <!-- Open Graph -->
+    <!-- From: https://github.com/mmistakes/hpstr-jekyll-theme/blob/master/_includes/head.html -->
+    <meta property="og:locale" content="en_US">
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="某些网络工具的安全性">
+    <meta property="og:description" content="Just some random thoughts.">
+    <meta property="og:url" content="https://blog.zhuhaow.me/security/ss/2017/04/07/the-security-myth-of-some-network-tools/">
+    <meta property="og:site_name" content="Samples">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary" />
+    
+    <meta name="twitter:title" content="某些网络工具的安全性" />
+    <meta name="twitter:description" content="Just some random thoughts." />
+    <meta name="twitter:url" content="https://blog.zhuhaow.me/security/ss/2017/04/07/the-security-myth-of-some-network-tools/" />
+
+    <!-- Icons -->
+    <link rel="apple-touch-icon" sizes="57x57" href="/apple-touch-icon-57x57.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="/apple-touch-icon-114x114.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="/apple-touch-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="/apple-touch-icon-144x144.png">
+    <link rel="apple-touch-icon" sizes="60x60" href="/apple-touch-icon-60x60.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="/apple-touch-icon-120x120.png">
+    <link rel="apple-touch-icon" sizes="76x76" href="/apple-touch-icon-76x76.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/apple-touch-icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-180x180.png">
+    <link rel="icon" type="image/png" href="/favicon-192x192.png" sizes="192x192">
+    <link rel="icon" type="image/png" href="/favicon-160x160.png" sizes="160x160">
+    <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96">
+    <link rel="icon" type="image/png" href="/favicon-16x16.png" sizes="16x16">
+    <link rel="icon" type="image/png" href="/favicon-32x32.png" sizes="32x32">
+
+    
+    <script type="text/javascript">
+       (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+       (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+       m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+       })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+       ga('create', 'UA-55631276-1', 'auto');
+       ga('send', 'pageview');
+    </script>
+    
+</head>
+
+<body class="site">
+  
+	
+
+  <div class="site-wrap">
+    <header class="site-header px2 px-responsive">
+  <div class="mt2 wrap">
+    <div class="measure">
+      <a href="https://blog.zhuhaow.me" class="site-title">Samples</a>
+      <nav class="site-nav">
+        
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+
+      </nav>
+      <div class="clearfix"></div>
+      
+        <div class="social-icons">
+  <div class="social-icons-right">
+    
+      <a class="fa fa-github" href="https://github.com/zhuhaow"></a>
+    
+    
+    
+    <a class="fa fa-rss" href="/feed.xml"></a>
+    
+    
+    
+    
+    
+    
+    
+    
+  </div>
+  <div class="right">
+    
+    
+    
+  </div>
+</div>
+<div class="clearfix"></div>
+
+      
+    </div>
+  </div>
+</header>
+
+
+    <div class="post p2 p-responsive wrap" role="main">
+      <div class="measure">
+        
+
+
+<div class="post-header mb2">
+  <h1>某些网络工具的安全性</h1>
+  <span class="post-meta">Apr 7, 2017</span><br>
+  
+    <span class="post-meta">Updated: Apr 9, 2017</span><br>
+  
+    <!-- <span class="post-meta small"> -->
+      <!--  -->
+      <!-- 1 minute read -->
+    <!--  -->
+    <!-- </span> -->
+</div>
+
+<article class="post-content">
+  <p>虽然网络上充斥着对某些上网工具不同参数组合的主观感受和近乎玄学的经历，以及种种工具间粉丝的互撕，但奇怪的是我却很少看到有人真正分享安全性背后的原理和不安全的原因，种种描述和感受常常让人有一种火电水电的既视感。</p>
+
+<p>虽然我对于 Cryptography 只是略懂皮毛，但是还是想写点分析，算是抛砖引玉了。写的比较浅显，毕竟啥也不精，也没能力做学术交流，如果有什么意见可以随意留言。预备知识只需要一点点对称加密的皮毛即可。</p>
+
+<p>Updated:</p>
+
+<p>感谢Rio的讨论，增加了一些安全本身的分析。</p>
+
+<h2 id="在我们谈安全时我们究竟在谈什么">在我们谈安全时，我们究竟在谈什么</h2>
+
+<p><del>查了一下清华计算机系培养计划，居然没有一门针对安全的，可能是我漏了。</del>（是我漏了，有选修课）</p>
+
+<p>又查了一下浙大，唯一一门但还是选修课……</p>
+
+<p>我个人是觉得呢，其实与其开那些花里胡哨的“人工智能”相关课程蜻蜓点水，或者搞得和个培训机构一样搞什么 Android、 iOS 开发，还不如好好教上一些基础，出来也算是无负于科班的名声。毕竟如果一个刚培训出来上岗俩月的就算了，零基础速成，要求安全未免太过。如果科班出身也弄出什么密码明文存储， hash 两遍增加密码安全性或者多种 hash 结合增加破解难度这些常见的“安全手段”的话，实在是说不过去吧。</p>
+
+<p>不过话说回来，大多数安全问题的主要原因，并不是安全意识的好坏，而往往是 code by accident<sup id="fnref:1"><a href="#fn:1" class="footnote">1</a></sup> 的结果，用心不用心，负责不负责才是很多网站出安全问题的根本原因。</p>
+
+<p>不废话了，言归正传，扯这么多无关的只是想说，安全这个东西吧，根本没人重视，很多时候很多人根本就不知道，也懒得搞明白自己在说什么。别的东西你随便找个网站复制黏贴它碰巧work了你就交差，看个demo恨不能直接解决你的问题（所以你活该要加班修 bug ），忽悠过去了就跑去和人家说你是“掌握”、“精通”，具有多年工作“经验”。但是一旦涉及安全问题，只要你没明白背后的原理，99.99% 你的理解是会出现偏差的。 ss 安全性的妖魔化就是例证。</p>
+
+<p>通常的 Cryptography 有很多方面，而我们关心的工具我想应该只关注以下方面：</p>
+<ol>
+  <li>Confidentiality</li>
+  <li>Integrity</li>
+  <li>Authentication</li>
+</ol>
+
+<p>另外还有一项无关 Cryptography 的问题， Obfuscation。</p>
+
+<p>除此之外的一切，要么是无关安全的实现细节，要么是更为艰涩的玄学，我就留待大神去分析了。</p>
+
+<h2 id="协议">协议</h2>
+
+<p>在展开任何细节之前，我们先看看基本的协议是怎样的。</p>
+
+<p>ss 最基本的协议非常简单，从它的名字也可以看出来，是一个简化版的 socks 代理协议。</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>IV: VARIABLE | TYPE: 1 BYTE | REQUEST: VARIABLE
+</code></pre></div></div>
+
+<p>其中，从 <code class="highlighter-rouge">TYPE</code> 开始的内容均为加密的，而 <code class="highlighter-rouge">REQUEST</code> 的内容根据 <code class="highlighter-rouge">TYPE</code> 的不同而不同。 Initial vector 应该不需要解释了吧。</p>
+
+<h5 id="type--1"><code class="highlighter-rouge">TYPE</code> = 1</h5>
+<p>请求连接到 IPv4 地址：</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>IP: 4 BYTES | PORT: 2 BYTES | FORWARD DATA
+</code></pre></div></div>
+
+<h5 id="type--4"><code class="highlighter-rouge">TYPE</code> = 4</h5>
+<p>请求连接到 IPv6 地址：</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>IP: 16 BYTES | PORT: 2 BYTES | FORWARD DATA
+</code></pre></div></div>
+
+<h5 id="type--3"><code class="highlighter-rouge">TYPE</code> = 3</h5>
+<p>请求连接到域名：</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>HOST_LEN: 2 BYTES | HOST: HOST_LEN BYTES | PORT: 2 BYTES | FORWARD DATA
+</code></pre></div></div>
+
+<p>在服务器回复的时候，直接回复 IV 和加密后的数据，而所有的加密方式都是对称加密。</p>
+
+<h2 id="加密算法">加密算法</h2>
+
+<p>在读下去之前，我先问大家几个问题，大家可以自行判断你觉得如果一个算法的加密强度能够达到以下层级对你究竟是安全还是不安全，注意，只是解密你的数据，不是破解算法达到秒解数据需要的时间：</p>
+
+<ol>
+  <li>加密数据即便使用最顶级的超级计算机也需要一千年才能解密</li>
+  <li>加密数据使用最顶级的计算机需要3个月才能解密</li>
+  <li>加密数据使用普通台式机3个月就可以解密</li>
+</ol>
+
+<p>大体上来说，现在大家闻之色变的算法处在若干年后基本也进入不了2的状态，很多大家表示最好换掉的处在1往上的状态，3的算法基本没有用过，因为新算法的运算量往往是几何级数增长的。</p>
+
+<p>既然解密不可行，那么有没有其他的安全问题呢。</p>
+
+<p>我先分析一个真实案例，大家可以判断这是安全呢还是不安全。</p>
+
+<p>假设一个算法，一个中间人必须要记录你的所有数据连接传输的数据，如果他人品爆发，可能几百万条连接，如果正常，可能是几万亿条连接之后，他可以得到其中某两条（不可选择）的数据的明文异或后的值。</p>
+
+<p>注意条件，这个中间人，可以取得你传输的数据，并且把它记录下来，然后还要进行匹配，费尽千辛万苦，在人品大爆发的前提下，才有可能获得数百万不止的连接中随机两条的数据明文的异或值，基本上连这两条数据是什么都恢复不出来，这还是在他确定你用了这个加密算法的情况下。</p>
+
+<p>这个算法安全吗？</p>
+
+<p>这差不多就是 ss 加密的安全程度，甚至还要安全数万倍不止。</p>
+
+<p>在学界和业界的一些人看来，这个算法是不够安全的，不错，但是对你安全不安全，我觉得大家可以自己判断。</p>
+
+<!-- 那么，怎么加密呢？各个论坛和群组中众人闻 RC4-MD5 色变，高谈 chacha20 如何快过 AES。 -->
+
+<!-- 但是呢，这个问题是这样的：如果你觉得 RC4-MD5 对你不够安全，嗯，我是不知你究竟牵涉进了什么大事，不过首先你的需求就使得你的水平不应该在读这篇文章而是在研读 CCS 的论文（或者请个安全团队），然后把你的安满国产软件的 Windows 格了换成 Tails，把你的 Android 扔进垃圾桶换成 iPhone；至于 chacha20，只能说如果你是在路由器上跑我还能理解；像 AES 都不够安全这种神论就不要再说了。 -->
+
+<p>好了，废话扯完回归协议本身。</p>
+
+<h2 id="问题在哪">问题在哪？</h2>
+
+<p>这个似乎已经“不安全”成一个筛子的协议的问题究竟出在哪呢？</p>
+
+<p>如果有安全意识的应该已经感到这里有一点问题了，在一个加密流中，泄露某一位的真实值其实很可能不安全。</p>
+
+<p>在 ss 协议中，IV 几乎是定长的，而数据明文第一位的值为 1，3，4，必居其一。</p>
+
+<p>由于加密前后的数据是等长的，显然，对应位的密文的 256 种情况必然一一对应明文的 256 种情况，换言之，保持 IV 不变，尝试 256 次就必然可以得到一次服务器认为 <code class="highlighter-rouge">TYPE</code> 是 1 和 4 的情况，在<code class="highlighter-rouge">TYPE</code> 是 1 和 4 时，服务器会尝试连接由后面的数据所给定的 IP 地址和端口，而任意的 6 或 18 Bytes 都构成了合法的请求。</p>
+
+<p>在服务器收到不合法的请求的时候（<code class="highlighter-rouge">TYPE</code> 不是 1，3，4）会直接断开，而接到之前提到的请求的时候会去尝试连接目标地址，这样只要保持 IV 不变，随机生成 18 Bytes 数据，第一位尝试 256 种可能（其他位完全无所谓）即可根据服务器的行为进行判断这是不是 ss 服务器了。</p>
+
+<p>问题出在哪里呢？就出在 ss 的实现上，立刻断开和过一会断开的行为差异。</p>
+
+<p>其实这个问题非常好解决，有两种办法：</p>
+
+<p>第一个是：只要保证 ss 的行为对于合法和不合法请求没有差异即可。</p>
+
+<p>在服务器接受到一个合法的伪造请求连接至随机的远程服务器时，有几种可能：</p>
+<ol>
+  <li>连接成功。对于一个随机的地址和端口来说，非常不可能，可以忽略。</li>
+  <li>RST。</li>
+  <li>超时。这是最有可能的情况。</li>
+</ol>
+
+<p>对于第二种，服务器会很快断开到客户端的连接，对于第三种，则会等的更久一些。</p>
+
+<p>所以其实解决方案很简单，在发现请求非法时不要立刻断开，而是随机等待数秒后再进行断开即可。</p>
+
+<p>第二个方法其实更简单也更根本，不使用 <code class="highlighter-rouge">TYPE</code> 1 和 4，这样只要验证一下 <code class="highlighter-rouge">HOST</code> 是不是合法的域名就可以了，而随机生成合法域名是非常困难的（并不是每一个ASCII都构成合法域名，何况你的 <code class="highlighter-rouge">HOST_LEN</code> 也要合法）。只要规定 <code class="highlighter-rouge">HOST_LEN</code> 和 <code class="highlighter-rouge">HOST</code> 必然由一个 IP 包发来，事实上这也是几乎所有实现出于简化的假设，即可。</p>
+
+<p>如果采用重放，二依然可能会有一点点问题，如果担心这种可能性存在，还是可以采用一。</p>
+
+<h2 id="所以它已经解决了">所以它已经解决了？</h2>
+
+<p>这两个简单的解决方案至今也没有被实现，反而有一种用新的问题来掩盖久问题的趋势出现。所以，这个问题还没有彻底解决，大家还可以继续撕一会儿。</p>
+
+<p>回到最开始我们提到的安全性三个方面，Confidentiality 之前已经说了情况了，到底有没有问题大家自行考量， Integrity 可以说在设计之初就并没有列入考量（这并没有问题，我懒得展开了，但是篡改数据没有任何意义，感兴趣的同学可以查看这里的说明<sup id="fnref:2"><a href="#fn:2" class="footnote">2</a></sup>）， Authentication 其实是通过 <code class="highlighter-rouge">TYPE</code> 来实现的，也是出问题的地方所在，但是即便如此，伪造的请求就和 hash 的碰撞一样，都是合法的随机样本，没有实际意义。</p>
+
+<p>虽然简单混淆 Authentication 成功和失败的行为或者增加欺骗 Authentication 的成本即可解决问题，但是很显然这场大戏并不想就此停息，所以各方的算法层出不穷。我没有精力分析这些算法从 Integrity 和 Authentication 的角度是如何解决这个不存在的问题以及在此同时可能引入新的问题的，况且这并不是当前需要解决问题的关键所在。</p>
+
+<h2 id="另一个问题">另一个问题</h2>
+
+<p>IPv4 的地址有 \(2^{32}\) 个，每个 IP 的端口有 \(2^{16}\) 个，那么如果有人想要进行探测，他怎么知道要探测哪里去呢？显然不能是随机的，这就牵涉到一个问题， Obfuscation。</p>
+
+<p>设想一下，你的电脑对一个服务器的某一非常见高端口进行大量主动链接，传输大量随机数据。</p>
+
+<p>又或者，你的电脑连接至80或443或25端口，但传输显然不是 http， https 或是 smtp 的数据。</p>
+
+<p>那么，作为通路中的一个时刻都在分析数据的节点，同学，这特征真的已经显著的不能再显著了好么。</p>
+
+<p>特别是考虑到经常有很多不同的设备连接到这个服务器发送大量随机数据的情况，想不注意到你真的好难。</p>
+
+<p>怎么办呢？</p>
+
+<p>我们需要 Obfuscation， 将数据流伪装成另一种数据流（这并没有在理论上增加安全性）。</p>
+
+<p>具体实现已经有了，虽然 ss 中似乎来来去去，我也搞不清楚情况，但在 ssr 中，如 http_simple 和 tls1.2_ticket_auth 等等通过在头部伪装成普通的 http 或 https 在一定程度上规避了这个问题。同时，在某些网络下可能还能通过欺骗 QoS 提升速度，不过这和本文无关了。</p>
+
+<h2 id="thats-all">That’s all?</h2>
+
+<p>Emmm…</p>
+
+<p>其实特征并不只有请求的头部（http 头， SSL 握手），中间的每一个数据包的长度都可能在暗示着当前传输的内容。不过考虑到这所需要的运算资源和准确度，我实在不觉得有必要在意太多。要明白，行为本身的特征已经相当明显，而所有其他的流量混淆都必然增加 overhead，在我看来完全是得不偿失。</p>
+
+<h2 id="总结">总结</h2>
+
+<p>所以，ss 加密的问题我基本都已经写出来了，够不够安全大家可以自行判断；服务器有可能被探测，只要在实现上略作修改即可，但是似乎大家比较喜欢从理论上解决无人想去修正（虽然漏洞本身只是实现上的）。</p>
+
+<p>至于， Obfuscation，如果 QoS 很有效可以考虑使用，其他时候也可以求个心理安慰吧。</p>
+
+<p>写这篇文章的主要原因，并不是想要否定任何想要取得更高安全性的努力，只是想让讨论本身回复一个理性的状态。如果想说 ss “不安全”，至少先把究竟多不安全说清楚吧。</p>
+
+<div class="footnotes">
+  <ol>
+    <li id="fn:1">
+      <p>https://trevan.co/dont-code-by-accident/ <a href="#fnref:1" class="reversefootnote">&#8617;</a></p>
+    </li>
+    <li id="fn:2">
+      <p>https://github.com/shadowsocks/shadowsocks-org/issues/64 <a href="#fnref:2" class="reversefootnote">&#8617;</a></p>
+    </li>
+  </ol>
+</div>
+
+</article>
+
+
+
+
+
+
+  <div id="disqus_thread"></div>
+  <script type="text/javascript">
+    var disqus_shortname  = 'zhuhaow';
+    var disqus_identifier = '/security/ss/2017/04/07/the-security-myth-of-some-network-tools';
+    var disqus_title      = "某些网络工具的安全性";
+
+    (function() {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+  </script>
+  <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+
+
+
+
+
+      </div>
+    </div>
+  </div>
+
+  <footer class="center">
+  <div class="measure">
+    <small>
+      Theme crafted with &lt;3 by <a href="http://johnotander.com">John Otander</a> (<a href="https://twitter.com/4lpine">@4lpine</a>).<br>
+      &lt;/&gt; available on <a href="https://github.com/johnotander/pixyll">GitHub</a>.
+    </small>
+  </div>
+</footer>
+
+
+</body>
+</html>

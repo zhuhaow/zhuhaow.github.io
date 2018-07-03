@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html>
+<head>
+    
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>A random walk in PyTorch (1) &#8211; Samples</title>
+    <link rel="dns-prefetch" href="//maxcdn.bootstrapcdn.com">
+    <link rel="dns-prefetch" href="//cdn.mathjax.org">
+    <link rel="dns-prefetch" href="//cdnjs.cloudflare.com">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Just some random thoughts.">
+    <meta name="robots" content="all">
+    <meta name="author" content="Zhuhao Wang">
+    
+    <meta name="keywords" content="machine, learning, pytorch">
+    <link rel="canonical" href="https://blog.zhuhaow.me/machine/learning/pytorch/2018/01/20/a-random-walk-in-pytorch/">
+    <link rel="alternate" type="application/rss+xml" title="RSS Feed for Samples" href="/feed.xml" />
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/pixyll.css?201807031005" type="text/css">
+
+    <!-- Fonts -->
+    
+    <link href='//fonts.googleapis.com/css?family=Merriweather:900,900italic,300,300italic&subset=latin-ext,latin' rel='stylesheet' type='text/css'>
+    <link href='//fonts.googleapis.com/css?family=Lato:900,300&subset=latin-ext,latin' rel='stylesheet' type='text/css'>
+    
+    
+      <link href="//maxcdn.bootstrapcdn.com/font-awesome/latest/css/font-awesome.min.css" rel="stylesheet">
+    
+
+    <!-- MathJax -->
+    
+      <script type="text/javascript" src="//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+      </script>
+      
+
+    <!-- Verifications -->
+    
+    
+
+    <!-- Open Graph -->
+    <!-- From: https://github.com/mmistakes/hpstr-jekyll-theme/blob/master/_includes/head.html -->
+    <meta property="og:locale" content="en_US">
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="A random walk in PyTorch (1)">
+    <meta property="og:description" content="Just some random thoughts.">
+    <meta property="og:url" content="https://blog.zhuhaow.me/machine/learning/pytorch/2018/01/20/a-random-walk-in-pytorch/">
+    <meta property="og:site_name" content="Samples">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary" />
+    
+    <meta name="twitter:title" content="A random walk in PyTorch (1)" />
+    <meta name="twitter:description" content="Just some random thoughts." />
+    <meta name="twitter:url" content="https://blog.zhuhaow.me/machine/learning/pytorch/2018/01/20/a-random-walk-in-pytorch/" />
+
+    <!-- Icons -->
+    <link rel="apple-touch-icon" sizes="57x57" href="/apple-touch-icon-57x57.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="/apple-touch-icon-114x114.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="/apple-touch-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="/apple-touch-icon-144x144.png">
+    <link rel="apple-touch-icon" sizes="60x60" href="/apple-touch-icon-60x60.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="/apple-touch-icon-120x120.png">
+    <link rel="apple-touch-icon" sizes="76x76" href="/apple-touch-icon-76x76.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/apple-touch-icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-180x180.png">
+    <link rel="icon" type="image/png" href="/favicon-192x192.png" sizes="192x192">
+    <link rel="icon" type="image/png" href="/favicon-160x160.png" sizes="160x160">
+    <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96">
+    <link rel="icon" type="image/png" href="/favicon-16x16.png" sizes="16x16">
+    <link rel="icon" type="image/png" href="/favicon-32x32.png" sizes="32x32">
+
+    
+    <script type="text/javascript">
+       (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+       (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+       m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+       })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+       ga('create', 'UA-55631276-1', 'auto');
+       ga('send', 'pageview');
+    </script>
+    
+</head>
+
+<body class="site">
+  
+	
+
+  <div class="site-wrap">
+    <header class="site-header px2 px-responsive">
+  <div class="mt2 wrap">
+    <div class="measure">
+      <a href="https://blog.zhuhaow.me" class="site-title">Samples</a>
+      <nav class="site-nav">
+        
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+
+      </nav>
+      <div class="clearfix"></div>
+      
+        <div class="social-icons">
+  <div class="social-icons-right">
+    
+      <a class="fa fa-github" href="https://github.com/zhuhaow"></a>
+    
+    
+    
+    <a class="fa fa-rss" href="/feed.xml"></a>
+    
+    
+    
+    
+    
+    
+    
+    
+  </div>
+  <div class="right">
+    
+    
+    
+  </div>
+</div>
+<div class="clearfix"></div>
+
+      
+    </div>
+  </div>
+</header>
+
+
+    <div class="post p2 p-responsive wrap" role="main">
+      <div class="measure">
+        
+
+
+<div class="post-header mb2">
+  <h1>A random walk in PyTorch (1)</h1>
+  <span class="post-meta">Jan 20, 2018</span><br>
+  
+    <!-- <span class="post-meta small"> -->
+      <!--  -->
+      <!-- 3 minute read -->
+    <!--  -->
+    <!-- </span> -->
+</div>
+
+<article class="post-content">
+  <p>这是一系列我拖延了很久很久很久的文章。</p>
+
+<p>很久之前，我就决定通读一个深度学习的基础库。根本上来说，这些库的核心并没有什么高深莫测的技术，但是仍有着很多工程上的细节。使用这样的计算库，追求的就是不仅仅是开发效率，也同样有着运行效率的考量。而只有深入了这些库，才能够做到真正的理解它们的差异，提升运行的效率。此外，还有另一个我很关心的则是项目代码的组织问题。</p>
+
+<p>我向来都懒的把学习的心得写成文章，一来记录效率太低，二来意义也不大，所以每天欺骗自己花钱租 VPS 搭博客是为了促进学习其实一个字都懒得写。但是仔细读代码这件事情确实很难让我提起兴趣（还是走马观花或者直奔主题的比较多），以至于这件事拖延至今。所以我下决心写这一系列文章作为对我自己的一个约束（也是要让自己觉得 VPS 钱没白花不是）。写这一系列文章的时候，我其实也还没读过 PyTorch 的代码。</p>
+
+<p>按照我一贯的习惯，我假设读者有基本的机器学习的常识和计算机的基本知识，很基础就行，你甚至不需要知道什么是 BLAS。但我也不会去解释 C 和 Python 有什么区别，所以读者还是要有基本的概念。因为我懒，很多问题应该都是点到为止，毕竟任何具体技术的介绍文章网上都是汗牛充栋，重复一遍没有太大意义，我也很难写到他们的水平。当然，如果我手头恰好有合适的资料我也会一起给出来。</p>
+
+<p>这一系列文章，我预计将会有很大的一部分关注在背景知识、项目的代码组织结构和整个框架的组织结构上，涉及具体的代码细节的分析应当不会太多。</p>
+
+<p>我个人不觉得逐行仔细阅读具体的代码有太大帮助，重要的是大方向上的逻辑和思路。当然如果觉得写功能这件事情有难度的话倒是可以多读多练，但我个人通常是一个想的比写的多的人。框架编写组织设计的逻辑总是第一位的，其他的都顺理成章，如果一个库都没有一个清晰的逻辑，那我个人建议尽量绕着走。</p>
+
+<h2 id="why-pytorch">Why PyTorch?</h2>
+
+<p>如果这篇文章有人读的话（谢谢大家），想来也是知道 PyTorch 是什么的，大概第一个问题是：为什么不是 TensorFlow ？</p>
+
+<p>太多人爱 TensorFlow，毋庸置疑的热爱，虽然我不太确定这是不是阅尽千帆后的热爱。TensorFlow 几乎解决了深度学习从训练到部署的一切需求，似乎没有太多的理由不使用它。为了不模糊重点，这一系列的文章中，我会尽量避免对 TensorFlow 具体的评价。当然了，我也没有仔细研究过 TensorFlow，也没有资本去评价什么。</p>
+
+<p>但即便你是 TensorFlow 的狂热粉丝，分析了解 PyTorch 依然会对你很有帮助：</p>
+
+<ul>
+  <li>如果已经对 TensorFlow 了若指掌，那么理解 PyTorch 的底层实现也花不了你几分钟的时间（literally），但有可能会给你一个新的角度来看待问题。</li>
+  <li>如果你对 TensorFlow 的底层一无所知，那么相较于复杂和笨重的 TensorFlow，PyTorch 将会是一个更加简单清晰的入门基础。</li>
+</ul>
+
+<p>在 GitHub 上，TensorFlow 有八万多个 star<sup id="fnref:1"><a href="#fn:1" class="footnote">1</a></sup>，而 PyTorch 才刚刚一万出头<sup id="fnref:2"><a href="#fn:2" class="footnote">2</a></sup>，在可预见的未来，我并不觉得这一趋势会有太大的变化。某种意义上，可以说 PyTorch 是研究人员自己对 Torch 的救赎，终究还是研究人员自己的工具，从侧重点和功能上就难以获得如 TensorFlow 一般的影响力。当然，用户最多的东西也不总是最优秀的——某些语言就是很好的例证，我就不引战了。</p>
+
+<p>如果你想要知道我对框架设计理念的偏好，我一直用的是 Lasagne 而不是 Keras。</p>
+
+<p>言归正传，回到 PyTorch 上来。</p>
+
+<h2 id="pytorch-is-easier-to-learn">PyTorch is easier to learn</h2>
+<p>PyTorch 是一个 Imperative ，而非 Declarative 的计算框架，如果你熟悉 Theano 或是 TensorFlow，这应该很好理解。只要写程序的人，没有人不熟悉 Imperative 的模式，只是太多时候，大家不了解 Declarative 模式，没有对比，也就觉得 Imperative 并不存在。</p>
+
+<p>在一般的程序中，如果我们写：</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">a</span> <span class="o">=</span> <span class="mi">5</span>
+<span class="n">b</span> <span class="o">=</span> <span class="n">a</span> <span class="o">+</span> <span class="mi">3</span>
+<span class="n">c</span> <span class="o">=</span> <span class="n">b</span> <span class="o">+</span> <span class="mi">4</span>
+<span class="k">print</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="c"># 12</span>
+</code></pre></div></div>
+
+<p>我们预期，程序会先创建变量 <code class="highlighter-rouge">a</code>，然后得到变量 <code class="highlighter-rouge">b</code>，再得到变量 <code class="highlighter-rouge">c</code>，最后打印变量<code class="highlighter-rouge">c</code>。（当然，这不一定是事实，不论是对 Python 还是 C，编译器/解释器都可能会做相当程度的优化来抹去这两个中间变量。）</p>
+
+<p>大多数人接触过的 Declarative 的语言，大概是 SQL，在 SQL 中，考虑如下代码：</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> 
+<span class="p">(</span><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">Person</span> <span class="k">WHERE</span> <span class="n">Age</span> <span class="o">&gt;</span> <span class="mi">30</span><span class="p">)</span>
+<span class="k">WHERE</span> <span class="n">Age</span> <span class="o">&lt;</span> <span class="mi">40</span>
+</code></pre></div></div>
+
+<p>虽然这段代码太过牵强，但是除了代码本身的无意义之外，还有人可能会担心性能问题：先检索创建一个临时表，然后再次检索临时表，显然对效率有极大影响，对吧？</p>
+
+<p>事实上，上面的代码和下面没什么区别：</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">Person</span> <span class="k">WHERE</span> <span class="n">Age</span> <span class="o">&gt;</span> <span class="mi">30</span> <span class="k">AND</span> <span class="n">Age</span> <span class="o">&lt;</span> <span class="mi">40</span>
+</code></pre></div></div>
+
+<p>这就是 Declarative，你只说要做什么，却不说要怎么做，其他的部分都由负责执行的组件负责。</p>
+
+<p>当然，在任何语言中，由于编译器的优化，很多时候 Declarative 和 Imperative 的区隔并非那么明显。尤其是如果一些库在库的层面上就做了很多优化，使得我们在某种意义上在 Imperative 的语言中实现了 Declarative 的效果，使得大家觉得这两个模式总是混杂在一起。但是两者核心思路的区别仍是非常清晰的。不过，想要真正体会到 Declarative，可能还是需要学习一些从根本上就是 Declarative 的语言才行。</p>
+
+<p>在 TensorFlow 中，我们用 Python 构建一个 computation graph (dataflow graph)。由于 Python 本身没有进行计算，Python 中的 <code class="highlighter-rouge">if</code> 和 最终的 graph 没有任何关系，所以我们才会遇到需要使用 <code class="highlighter-rouge">tf.cond</code> 的情况。最终，我们用 <code class="highlighter-rouge">Session</code> 来 <code class="highlighter-rouge">run</code> 我们构建得到的 graph。预先构建声明 graph 的好处很多，最明显的，就是（潜在的）性能的提升，尤其是计算资源和调度的优化（对新手而言，数值的稳定性可能也是一个优势，不过 TensorFlow 似乎没有相关的优化），通过另行实现的 VM 执行 graph 定义的运算，TensorFlow 的性能和 Python 几乎没有什么关系。在谈到 JIT 的时候我可能会进一步的展开这个问题。总之，Declarative 的计算框架确实有很明显的优势，使得 TensorFlow 仍然选择了 Declarative 的方式 （TensorFlow 已经开始支持 Imperative 的方式了<sup id="fnref:12"><a href="#fn:12" class="footnote">3</a></sup>）。</p>
+
+<p>但是，虽然 TensorFlow 在一定程度上优化了 Theano 编译过慢的问题，却仍然不可能解决 Declarative 最大的问题——难以调试。由于声明和运算是分离的，而实际的计算又往往发生在一个高度优化的，不使用宿主语言的 VM 中，使得调试变得极为困难。错误发生时，往往都不在 Python 的 VM 里，使得所有的 Python Debugger 全部失效。</p>
+
+<p>另一方面，由于需要构建 computation graph，也就意味着创建任何 TensorFlow （暂时）不支持的的结构都变得极为麻烦（曾经的 TensorFlow 是没有 <code class="highlighter-rouge">scan</code> 的哦）。同时，这也意味着动态创建、修改 graph（比如 Recursive Neural Network）也很困难。</p>
+
+<p>PyTorch 是 Imperative 的，换言之，我们用 Python 来描述计算的过程就是我们进行计算的过程。简单地来看，当我们在 PyTorch 中调用 <code class="highlighter-rouge">c = a + b</code> 的时候，我们就进行了将 <code class="highlighter-rouge">a</code> 和 <code class="highlighter-rouge">b</code> 进行求和的计算，立刻得到 <code class="highlighter-rouge">c</code> 的结果。从一般的角度理解，这本应当是理所当然的事，这也是我们每天写代码的方式，完全符合我们的预期。从实际使用的角度来说，更透明的调试和更自然的编写模式也很大程度上提升了我们的开发效率。</p>
+
+<p>从另一个角度，我们可以简单的认为 PyTorch 就是将 TensorFlow 的 VM 转成了 Python 的 VM，因而 PyTorch 的复杂程度远低于 TensorFlow （当然这也有设计理念的问题）。所以，之前我说 PyTorch 是一个很适合进行分析入门的库，它有着机器学习库的核心，又刚好去掉了所有完成实验所不必须的部分（相较 TensorFlow），使得我们可以分析到实现一个实验的过程中最最根本、重要的部分。</p>
+
+<h2 id="pytorch-there-must-be-some-torch">PyTorch…… There must be some Torch</h2>
+
+<p>在一篇机器学习的狂热中，可能没有多少人听说过 Torch，就如同几乎无人问津的 Julia 一样，优秀而寂寞。</p>
+
+<p>虽然 Torch 的用户金光闪闪，Facebook，Twitter，Google，DeepMind …… 但是，只要想到还要学 Lua …… 人生巅峰似乎远了一点，还是算了吧 ……</p>
+
+<p>好吧，Torch 的缺点其实也不少。</p>
+
+<p>但是我个人觉得，语言也好，库也好，不是终身大事，大家别这么看重，很多人选择学哪个库搞得可能比作者对这个库都慎重，真心犯不着。这东西顶天了算个着装 style，不仅可以换，可以穿插着来，有的时候只有了解学习的够多才可能玩出混搭风不是。学习要抓住核心和逻辑，具体的 API 无关紧要。见得多了，不仅学的快，也更容易看出好坏了。</p>
+
+<p>当然了，这个问题太 tricky，比如我觉得哪怕随便学学 Haskell 对个人的成长也比弄明白 <code class="highlighter-rouge">universe_init()</code> 是干嘛的更有帮助一点，但是可能后者面试 Java 岗就是高级工程师，我一面试人家发现我连 API 都不知道，直接踹一边儿去了。而且吧，每个人的情况也各有不同：有的人的工作就是优化 JVM，搞明白这些是理所当然的，也是工作最需要的；有的人就是混个饭吃，恨不能学上一年就抱着传家；有的人想要先入行再深造，谈那些面试工作直接用不上的东西确实不是现阶段的目标。不过我一直觉得，光有深度，没有广度，一根针是站不稳的，大家 get 到 point 就好。</p>
+
+<p>扯远了，光引战，还是回归正题。</p>
+
+<p>Torch 的历史可能比很多人对机器学习的了解都要古老。2002年，当 Torch 发布时<sup id="fnref:3"><a href="#fn:3" class="footnote">4</a></sup>，SciPy 才刚发布不久，NumPy 还在遥远的四年后，Theano 更是遥遥无期。更多的时候，人们使用 SVMLight 或是 OpenCV，然后自己写 C 或是 C++ 把这些库给串起来，提点 feature 做上千八百张小图片的处理识别。</p>
+
+<p>第一版的 Torch 是一个 C++ 的库，当年的开发者们对于快速原型开发没有今天这样的追求，也可能是因为当年的人们对于底层的语言也都足够娴熟，anyway，Torch 的前三个版本都对 Lua 没有任何支持。不过 C++ 的接口定义也和今天的 Lua 别无二致。没有 Torch4（我不知道为什么，可能 Ronan Collobert 在写了一个 OC 版本的 Torch 后放弃了<sup id="fnref:4"><a href="#fn:4" class="footnote">5</a></sup>），2006 年发布的 Torch 5 提供了对于 Lua 的支持。</p>
+
+<p>2014 年的 Torch 7（嗯，没有 6），也就是今天的 Torch，和 Caffe 同期（Torch 晚一些）推出。Torch 7 提供了对 GPU 的支持，Lua 提供了完美的可编程性，编译（我觉得）比 Caffe 更简单，但是依然没有 Caffe 的影响力。当然了，这里可能也有很多别的原因。</p>
+
+<p>任何机器学习库所支持的功能都很难超越机器学习的需求本身，在网络结构简单的那个年代里，Torch 是没有今天的 Container 的（只有 Sequential），这使得当年的 Torch 自带的 nn 难以支持今天我们习以为常的 ResNet 或是 Inception 结构，可能也是为何大家觉得 Caffe 也够用的原因。</p>
+
+<p>不过这扯的就有点远了，而且曾经的历史也不是很重要。回到主题，既然 Torch 不错，为何还要再有 PyTorch 呢？</p>
+
+<h2 id="lua-rocks-lua-sucks">Lua rocks, Lua sucks</h2>
+
+<p>理论上来说，我是应当来给 Lua 唱唱赞歌拉拉票的，尤其是和如今火爆的语言相比，Lua 理应受到更多的关注。</p>
+
+<p>虽然很多人可能从来没听说过 Lua，不过如果你在用 Windows，那么你的电脑中应该就有 Lua 的存在。几乎所有游戏的二次开发（War3/Dota2/etc）都是基于 Lua 完成的。作为动态语言，Lua 足够得快，足够得小，纯 ANSI C 实现的 Lua 有着完美的可移植性，几乎可以在所有的平台，所有的操作系统，所有的（当今的）硬件条件下运行。LuaJit <sup id="fnref:5"><a href="#fn:5" class="footnote">6</a></sup> 甚至可以达到接近 C 的运行速度<sup id="fnref:6"><a href="#fn:6" class="footnote">7</a></sup>。</p>
+
+<p>是什么阻止了我们将 Python 嵌入到各个平台和系统中去呢？</p>
+
+<p>第一个问题当然就是老生常谈的系统资源问题，这个显而易见，就不需要展开了。</p>
+
+<p>对于 C 有了解的同学可能已经注意到了，纯 ANSI C 实现其实也就意味着 Lua 自身几乎做不了太多的和操作系统的交互。这也就意味着 Lua 的标准库必然很小很弱。事实上，Lua 的设计中只有一种数据结构<sup id="fnref:7"><a href="#fn:7" class="footnote">8</a></sup>（增强版的 Hash 表），可以想见，在这一设计理念的支撑下，Lua 的标准库可以用聊胜于无来形容。但是，如果不是纯 ANSI C 实现，就意味着移植必然需要实现一个兼容层，这里所要花费的精力和时间就难以估计了。</p>
+
+<p>让我们来看看在 Lua 中如何分割字符串，这个处理数据时的常用操作。</p>
+
+<p>根据大家的设想，分割字符串应当是类似这样的代码。</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">s</span> <span class="o">=</span> <span class="s">"1,2,3"</span>
+<span class="n">s</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">","</span><span class="p">)</span> <span class="c"># ['1', '2', '3']</span>
+</code></pre></div></div>
+
+<p>如果你极其在意性能，那么可能会用类似这样的代码来避免拷贝字符串<sup id="fnref:9"><a href="#fn:9" class="footnote">9</a></sup>（Note: <code class="highlighter-rouge">strtok</code> 不是 thread-safe 的，应当使用 <code class="highlighter-rouge">strtok_r</code> 或 <code class="highlighter-rouge">strtok_s</code>）：</p>
+
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">char</span> <span class="n">str</span><span class="p">[]</span> <span class="o">=</span><span class="s">"- This, a sample string."</span><span class="p">;</span>
+<span class="kt">char</span> <span class="o">*</span> <span class="n">pch</span><span class="p">;</span>
+
+<span class="n">pch</span> <span class="o">=</span> <span class="n">strtok</span> <span class="p">(</span><span class="n">str</span><span class="p">,</span><span class="s">" ,.-"</span><span class="p">);</span>
+<span class="k">while</span> <span class="p">(</span><span class="n">pch</span> <span class="o">!=</span> <span class="nb">NULL</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="n">printf</span> <span class="p">(</span><span class="s">"%s</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span><span class="n">pch</span><span class="p">);</span>
+<span class="n">pch</span> <span class="o">=</span> <span class="n">strtok</span> <span class="p">(</span><span class="nb">NULL</span><span class="p">,</span> <span class="s">" ,.-"</span><span class="p">);</span>
+<span class="p">}</span>
+<span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>那么在 Lua 中，我们应当怎么做呢？我们设想着应当有一个 split 函数将 string 转为一个 table （还记得这唯一的数据结构么）。但是，并没有。</p>
+
+<p>如果你仔细想想，这也不算是不合理。试想，标准库应当尽可能的 general，我们不应对 delimiter 做太多的假设。那么 delimiter 会是什么呢？字符？字符串？正则？变量（可能随着分割次数变化）？两个连续的 delimiter 应当如何处理呢？既然我们要提供一个精简的标准库，那么不如就不要做这些假设比较好。</p>
+
+<p>算是合理，那么我们如何在 Lua 中完成一个简单的分割字符串功能呢？</p>
+
+<p>你需要<strong>自己写</strong>以下代码<sup id="fnref:8"><a href="#fn:8" class="footnote">10</a></sup>：</p>
+
+<div class="language-lua highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">function</span> <span class="nf">string</span><span class="p">:</span><span class="n">split</span><span class="p">(</span><span class="n">sep</span><span class="p">)</span>
+   <span class="kd">local</span> <span class="n">sep</span><span class="p">,</span> <span class="n">fields</span> <span class="o">=</span> <span class="n">sep</span> <span class="ow">or</span> <span class="s2">":"</span><span class="p">,</span> <span class="p">{}</span>
+   <span class="kd">local</span> <span class="n">pattern</span> <span class="o">=</span> <span class="nb">string.format</span><span class="p">(</span><span class="s2">"([^%s]+)"</span><span class="p">,</span> <span class="n">sep</span><span class="p">)</span>
+   <span class="n">self</span><span class="p">:</span><span class="n">gsub</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="k">function</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="n">fields</span><span class="p">[</span><span class="o">#</span><span class="n">fields</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">c</span> <span class="k">end</span><span class="p">)</span>
+   <span class="k">return</span> <span class="n">fields</span>
+<span class="k">end</span>
+</code></pre></div></div>
+
+<p>即便不会 Lua，我们只要注意到 <code class="highlighter-rouge">fields[#fields+1] = c</code> 是将 token 存到 table 中去，并使用当前 table 的 size 作为 key 就可以了，其他的地方都一目了然。</p>
+
+<p>其他语言的标准库的 split 的实现逻辑上也不会和上面的代码有什么根本差别（要优化一下数据结构和一些细节，输入往往不会直接使用正则），而且只要正则优化的够好，上面的代码性能也不会差。但是，你还愿意用 Lua 吗？</p>
+
+<p>单薄的标准库对于老手而言，也不算是一件坏事，就如同 Rails 的使用者纷纷跳转 Sinatra 一样。但是，如果你和新手说 Sinatra 内容少所以学习曲线平缓，那估计他要被坑死。</p>
+
+<p>本质上来说，Lua 就是 Sinatra。它提供了最基本的标准库，但除此之外一无所有。对于新手而言，我们当然可以在网上找到相关的库，比如我一搜便搜到了 Allen <sup id="fnref:10"><a href="#fn:10" class="footnote">11</a></sup>。但是，我们可以保证标准库的准确性和兼容性，没有经验的新手如何检查第三方库的质量呢？同时，由于使用者的不足，很多错误更是难以被发现，库的维护者自身也缺少维护的动力。</p>
+
+<p>同时，使用人数太少使得我们难以判断第三方库是否已经 production ready，比如 Lua 版的 Pandas —— DataFrame<sup id="fnref:11"><a href="#fn:11" class="footnote">12</a></sup>，已经快一年没有更新了。那么，它还可以用么？不知道。还会继续维护么？不知道。当然，实际情况会乐观的多，因为 Lua 的版本一般是固定的（5.1，为了使用 LuaJit），而 Torch 的 Lua 接口也不太可能会有大的变化，即便有问题也应该会是显式的错误。所以我们还是可以放心的尝试 DataFrame。</p>
+
+<p>从工程上看，由于最基本的标准库都缺乏，同时又缺少 NumPy，Pandas 这样的和标准库质量和影响力无异的第三方库，使得 Lua 的工程选择极其困难，很容易陷入到我用这个，你用那个，还反反复复造轮子的境地。</p>
+
+<p>由于 Lua 的原生用户很少，使用 Lua 也意味着重新了解一个完全不同的生态圈，这也将是一个巨大的学习成本。</p>
+
+<p>种种因素的叠加，虽然有很多 Torch 的用户金光闪闪，Torch 本身却没有获得太大的影响力。</p>
+
+<h2 id="pytorch-to-the-rescue">PyTorch to the rescue</h2>
+
+<p>Torch 也尝试过在 Lua 中调用 Python<sup id="fnref:13"><a href="#fn:13" class="footnote">13</a></sup>，不过显然不会有多少人真的想要依赖这种方式。</p>
+
+<p>那为什么还要强求呢？那就从了吧。</p>
+
+<p>于是将 Torch 的 Lua binding 换成 Python binding，就有了 PyTorch。</p>
+
+<p>虽然迁移到 Python 克服了 Lua 的劣势，却也丢失了 Lua 的巨大优势：Lua + LuaJIT ，可能是我知道的最快的动态语言。在 Python 中，性能事实上成为了很大的瓶颈，GIL 加上 Python 自身的性能瓶颈（在 Python 中条件跳转都是非常昂贵的），使得 saturate 多 GPU 较为困难（对一般人来说这基本不是问题）。我们之后应该会再讨论到这个问题。</p>
+
+<p>不过，语言就是这么的重要，Torch 在 GitHub 上只有七千多 star 的时候，PyTorch 已然后来居上，过万了……</p>
+
+<h2 id="lets-go">Let’s GO</h2>
+
+<p>这篇讲的东西都没啥实际的内容，就不再废话了。</p>
+
+<p>下一章，我们将从 <code class="highlighter-rouge">setup.py</code> 着手，先分析一下 PyTorch 的整体组织结构。</p>
+
+<div class="footnotes">
+  <ol>
+    <li id="fn:1">
+      <p>https://github.com/tensorflow/tensorflow <a href="#fnref:1" class="reversefootnote">&#8617;</a></p>
+    </li>
+    <li id="fn:2">
+      <p>https://github.com/pytorch/pytorch <a href="#fnref:2" class="reversefootnote">&#8617;</a></p>
+    </li>
+    <li id="fn:12">
+      <p>https://github.com/tensorflow/tensorflow/blob/master/tensorflow/contrib/eager/README.md <a href="#fnref:12" class="reversefootnote">&#8617;</a></p>
+    </li>
+    <li id="fn:3">
+      <p>http://citeseerx.ist.psu.edu/viewdoc/download;jsessionid=CBB0C8A5FE34F6D6DAFF997F6B6A205A?doi=10.1.1.8.9850&amp;rep=rep1&amp;type=pdf <a href="#fnref:3" class="reversefootnote">&#8617;</a></p>
+    </li>
+    <li id="fn:4">
+      <p>https://github.com/andresy/torch4 <a href="#fnref:4" class="reversefootnote">&#8617;</a></p>
+    </li>
+    <li id="fn:5">
+      <p>http://luajit.org <a href="#fnref:5" class="reversefootnote">&#8617;</a></p>
+    </li>
+    <li id="fn:6">
+      <p>https://julialang.org/benchmarks/ <a href="#fnref:6" class="reversefootnote">&#8617;</a></p>
+    </li>
+    <li id="fn:7">
+      <p>https://www.lua.org/pil/11.html <a href="#fnref:7" class="reversefootnote">&#8617;</a></p>
+    </li>
+    <li id="fn:9">
+      <p>http://www.cplusplus.com/reference/cstring/strtok/ <a href="#fnref:9" class="reversefootnote">&#8617;</a></p>
+    </li>
+    <li id="fn:8">
+      <p>http://lua-users.org/wiki/SplitJoin <a href="#fnref:8" class="reversefootnote">&#8617;</a></p>
+    </li>
+    <li id="fn:10">
+      <p>https://github.com/Yonaba/Allen <a href="#fnref:10" class="reversefootnote">&#8617;</a></p>
+    </li>
+    <li id="fn:11">
+      <p>https://github.com/AlexMili/torch-dataframe/ <a href="#fnref:11" class="reversefootnote">&#8617;</a></p>
+    </li>
+    <li id="fn:13">
+      <p>https://github.com/facebookarchive/fblualib/blob/master/fblualib/python/README.md <a href="#fnref:13" class="reversefootnote">&#8617;</a></p>
+    </li>
+  </ol>
+</div>
+
+</article>
+
+
+
+
+
+
+  <div id="disqus_thread"></div>
+  <script type="text/javascript">
+    var disqus_shortname  = 'zhuhaow';
+    var disqus_identifier = '/machine/learning/pytorch/2018/01/20/a-random-walk-in-pytorch';
+    var disqus_title      = "A random walk in PyTorch (1)";
+
+    (function() {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+  </script>
+  <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+
+
+
+
+
+      </div>
+    </div>
+  </div>
+
+  <footer class="center">
+  <div class="measure">
+    <small>
+      Theme crafted with &lt;3 by <a href="http://johnotander.com">John Otander</a> (<a href="https://twitter.com/4lpine">@4lpine</a>).<br>
+      &lt;/&gt; available on <a href="https://github.com/johnotander/pixyll">GitHub</a>.
+    </small>
+  </div>
+</footer>
+
+
+</body>
+</html>

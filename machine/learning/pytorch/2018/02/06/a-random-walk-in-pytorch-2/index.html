@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html>
+<head>
+    
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>A random walk in PyTorch (2) -- Build the World &#8211; Samples</title>
+    <link rel="dns-prefetch" href="//maxcdn.bootstrapcdn.com">
+    <link rel="dns-prefetch" href="//cdn.mathjax.org">
+    <link rel="dns-prefetch" href="//cdnjs.cloudflare.com">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Just some random thoughts.">
+    <meta name="robots" content="all">
+    <meta name="author" content="Zhuhao Wang">
+    
+    <meta name="keywords" content="machine, learning, pytorch">
+    <link rel="canonical" href="https://blog.zhuhaow.me/machine/learning/pytorch/2018/02/06/a-random-walk-in-pytorch-2/">
+    <link rel="alternate" type="application/rss+xml" title="RSS Feed for Samples" href="/feed.xml" />
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/pixyll.css?201807031005" type="text/css">
+
+    <!-- Fonts -->
+    
+    <link href='//fonts.googleapis.com/css?family=Merriweather:900,900italic,300,300italic&subset=latin-ext,latin' rel='stylesheet' type='text/css'>
+    <link href='//fonts.googleapis.com/css?family=Lato:900,300&subset=latin-ext,latin' rel='stylesheet' type='text/css'>
+    
+    
+      <link href="//maxcdn.bootstrapcdn.com/font-awesome/latest/css/font-awesome.min.css" rel="stylesheet">
+    
+
+    <!-- MathJax -->
+    
+      <script type="text/javascript" src="//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+      </script>
+      
+
+    <!-- Verifications -->
+    
+    
+
+    <!-- Open Graph -->
+    <!-- From: https://github.com/mmistakes/hpstr-jekyll-theme/blob/master/_includes/head.html -->
+    <meta property="og:locale" content="en_US">
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="A random walk in PyTorch (2) -- Build the World">
+    <meta property="og:description" content="Just some random thoughts.">
+    <meta property="og:url" content="https://blog.zhuhaow.me/machine/learning/pytorch/2018/02/06/a-random-walk-in-pytorch-2/">
+    <meta property="og:site_name" content="Samples">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary" />
+    
+    <meta name="twitter:title" content="A random walk in PyTorch (2) -- Build the World" />
+    <meta name="twitter:description" content="Just some random thoughts." />
+    <meta name="twitter:url" content="https://blog.zhuhaow.me/machine/learning/pytorch/2018/02/06/a-random-walk-in-pytorch-2/" />
+
+    <!-- Icons -->
+    <link rel="apple-touch-icon" sizes="57x57" href="/apple-touch-icon-57x57.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="/apple-touch-icon-114x114.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="/apple-touch-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="/apple-touch-icon-144x144.png">
+    <link rel="apple-touch-icon" sizes="60x60" href="/apple-touch-icon-60x60.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="/apple-touch-icon-120x120.png">
+    <link rel="apple-touch-icon" sizes="76x76" href="/apple-touch-icon-76x76.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/apple-touch-icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-180x180.png">
+    <link rel="icon" type="image/png" href="/favicon-192x192.png" sizes="192x192">
+    <link rel="icon" type="image/png" href="/favicon-160x160.png" sizes="160x160">
+    <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96">
+    <link rel="icon" type="image/png" href="/favicon-16x16.png" sizes="16x16">
+    <link rel="icon" type="image/png" href="/favicon-32x32.png" sizes="32x32">
+
+    
+    <script type="text/javascript">
+       (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+       (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+       m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+       })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+       ga('create', 'UA-55631276-1', 'auto');
+       ga('send', 'pageview');
+    </script>
+    
+</head>
+
+<body class="site">
+  
+	
+
+  <div class="site-wrap">
+    <header class="site-header px2 px-responsive">
+  <div class="mt2 wrap">
+    <div class="measure">
+      <a href="https://blog.zhuhaow.me" class="site-title">Samples</a>
+      <nav class="site-nav">
+        
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+
+      </nav>
+      <div class="clearfix"></div>
+      
+        <div class="social-icons">
+  <div class="social-icons-right">
+    
+      <a class="fa fa-github" href="https://github.com/zhuhaow"></a>
+    
+    
+    
+    <a class="fa fa-rss" href="/feed.xml"></a>
+    
+    
+    
+    
+    
+    
+    
+    
+  </div>
+  <div class="right">
+    
+    
+    
+  </div>
+</div>
+<div class="clearfix"></div>
+
+      
+    </div>
+  </div>
+</header>
+
+
+    <div class="post p2 p-responsive wrap" role="main">
+      <div class="measure">
+        
+
+
+<div class="post-header mb2">
+  <h1>A random walk in PyTorch (2) -- Build the World</h1>
+  <span class="post-meta">Feb 6, 2018</span><br>
+  
+    <!-- <span class="post-meta small"> -->
+      <!--  -->
+      <!-- 2 minute read -->
+    <!--  -->
+    <!-- </span> -->
+</div>
+
+<article class="post-content">
+  <p>按照我本来的计划，第二篇文章应该直接开始看 ATen 了，而且直奔 BLAS 而去。</p>
+
+<p>不过从 NEKit 的经验中我发现，可能是因为大家对于一个新的库都要花不少的时间才能把握住其中的逻辑，所以都不愿意花太多的精力。个人意见，通读代码没什么特别大的必要，除非你要做二次开发。但是至少要掌握库本身的逻辑所在。一个简单的标准就是，如果我问你，XX 是在哪里做的，你至少应该能很快的找到具体的代码位置（虽然你不知道它的具体实现）。靠什么找到呢？靠的是你理解每个模块的功能，所以你自然知道要去找哪一个模块，你也自然明白你的每一行调用究竟做了什么，而不是复制黏贴 demo，再通过随机采样实现自己想要的功能。</p>
+
+<p>我还不太确定，但我估计我之后的各章都只是简单的展开主要逻辑（太懒）。由于我非常可能会省略很多的中间过程，所以可能有的时候会有人会问，你怎么会找到、看到这些东西呢？比如说，为什么会先从 ATen 开始呢？很多事情，自己做很简单，看别人的就很难了。这也是为什么有些时候读书或者读代码很难的原因，你只能看到漫长累加的结果，而不是过程。可能每一个小迭代的逻辑过程都很简单，就好比数学考试的大题若是有五小问就比只有最后一问要容易很多一样，但是你知道自己的逻辑，却很难知道他人的逻辑。所以我想可以先分享一下我读代码的一些思路和逻辑，不成体系，正好借着了解 PyTorch 结构的这个例子来展开一下。</p>
+
+<p>和第一篇一样，这将是一篇不涉及任何 PyTorch 具体技术细节的文章。可以直接跳过。</p>
+
+<p><strong>之后所有内容都基于 commit dd5c195646b941d3e20a72847ac48c41e272b8b2。嗯，因为我拖了很久，其实 master 已经有了一些比较大的变化，比如 Caffe 的代码被合并进了 PyTorch（虽然我还没看到有什么实质的变化），但是整个框架的核心思想没有发生什么改变。另一方面，由于很多原因（比如太懒、太懒和太懒），我不想在花时间比较新的代码和之前的细微变化了，所以一切都已这个 commit 为准。我可能会在全部写完之后再写写一些大的变化（如果有的话）。</strong></p>
+
+<h2 id="oops-a-big-project">Oops, a big project</h2>
+
+<p>现在你面对着 PyTorch 的源代码：</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>-----------------------------------------------------------------------------------
+Language                         files          blank        comment           code
+-----------------------------------------------------------------------------------
+C++                                484          39495          16203         241502
+C/C++ Header                       610          12415          15851          83722
+Python                             483          19631          21796          64968
+C                                  208           6986           3058          40491
+CUDA                               315           7128           3859          39864
+Markdown                            76           8563              0          30437
+YAML                                15            507            199          26066
+CMake                               93           1404           2193           7029
+MSBuild script                      11              0              0           1711
+Protocol Buffers                    58            482            707           1612
+Fortran 90                          12            405            161           1528
+JSON                                10            131              0           1261
+make                                18            273            227            989
+Bourne Shell                        26            166            188            793
+m4                                   4             68             49            534
+CSS                                  3             69             16            284
+DOS Batch                            4             42              1            179
+Windows Resource File                1              3              0             34
+vim script                           2             14              7             34
+Dockerfile                           1              7              2             32
+Lua                                  1              5              0             28
+INI                                  2              0              0             19
+HTML                                 1              3              0             12
+-----------------------------------------------------------------------------------
+SUM:                              2438          97797          64517         543129
+</code></pre></div></div>
+
+<p>从何开始呢？</p>
+
+<p>你对 PyTorch 的依赖组件一无所知，也不了解 PyTorch 代码的组织结构。就算能猜个大概，但怎么把 PyTorch 代码的组织逻辑找出来呢？最起码的，先读哪个文件夹下面的哪个文件？</p>
+
+<p>第一步，也是最重要的，先读完 PyTorch 的文档。读完文档，就应当对一个库的基本功能有了清晰的概念，大体上也可以分析出库的代码有哪些模块所构成。</p>
+
+<p>接下来，你可以看看这个库是怎么编译的（对于某些提供 Makefile 或是 m4 的库就要看情况了），来理解代码的构成（至少你也要能分清楚每个文件夹下面的代码是干什么的）。幸运的是（相对 TensorFlow），PyTorch 的根目录下就有 <code class="highlighter-rouge">setup.py</code>，显然 PyTorch 的编译过程不会太难把握。</p>
+
+<p><code class="highlighter-rouge">setup.py</code> 文件的关键部分没有什么技术难度，即便你对 <code class="highlighter-rouge">distutils</code> 和 <code class="highlighter-rouge">setuptools</code> 不太了解应该也没啥问题。</p>
+
+<p>我们主要看看 PyTorch 的编译步骤。</p>
+
+<h2 id="building-pytorch">Building PyTorch</h2>
+
+<p>Oops，<code class="highlighter-rouge">setup.py</code> 有 743 行，要看一会儿了……吗？</p>
+
+<p>其实不用，几分钟就看完了。记住你的目的不是学习 <code class="highlighter-rouge">setuptools</code>，不要浪费时间，等你要用到的时候自然会弄明白的。</p>
+
+<p>打开文件，先通览一遍，前面好多东西林林总总似乎都是编译的细节，但是在最后：</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">'__main__'</span><span class="p">:</span>
+    <span class="n">setup</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s">"torch"</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="n">version</span><span class="p">,</span>
+          <span class="n">description</span><span class="o">=</span><span class="s">"Tensors and Dynamic neural networks in Python with strong GPU acceleration"</span><span class="p">,</span>
+          <span class="n">ext_modules</span><span class="o">=</span><span class="n">extensions</span><span class="p">,</span>
+          <span class="n">cmdclass</span><span class="o">=</span><span class="n">cmdclass</span><span class="p">,</span>
+          <span class="n">packages</span><span class="o">=</span><span class="n">packages</span><span class="p">,</span>
+          <span class="n">package_data</span><span class="o">=</span><span class="p">{</span><span class="s">'torch'</span><span class="p">:</span> <span class="p">[</span>
+              <span class="s">'lib/*.so*'</span><span class="p">,</span> <span class="s">'lib/*.dylib*'</span><span class="p">,</span> <span class="s">'lib/*.dll'</span><span class="p">,</span> <span class="s">'lib/*.lib'</span><span class="p">,</span>
+              <span class="s">'lib/torch_shm_manager'</span><span class="p">,</span>
+              <span class="s">'lib/*.h'</span><span class="p">,</span>
+              <span class="s">'lib/include/TH/*.h'</span><span class="p">,</span> <span class="s">'lib/include/TH/generic/*.h'</span><span class="p">,</span>
+              <span class="s">'lib/include/THC/*.h'</span><span class="p">,</span> <span class="s">'lib/include/THC/generic/*.h'</span><span class="p">,</span>
+              <span class="s">'lib/include/ATen/*.h'</span><span class="p">,</span>
+          <span class="p">]},</span>
+          <span class="n">install_requires</span><span class="o">=</span><span class="p">[</span><span class="s">'pyyaml'</span><span class="p">,</span> <span class="s">'numpy'</span><span class="p">],</span>
+          <span class="p">)</span>
+</code></pre></div></div>
+
+<p>好的，我们找到入口了，看一下，<code class="highlighter-rouge">ext_modules=extensions</code> 显然是要编译的模块，<code class="highlighter-rouge">cmdclass=cmdclass</code> 似乎是可以提供一些命令，<code class="highlighter-rouge">packages=packages</code> 显然是一些需要的包。</p>
+
+<p>往上一扫，就在同一屏幕里就有：</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">cmdclass</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s">'build'</span><span class="p">:</span> <span class="n">build</span><span class="p">,</span>
+    <span class="s">'build_py'</span><span class="p">:</span> <span class="n">build_py</span><span class="p">,</span>
+    <span class="s">'build_ext'</span><span class="p">:</span> <span class="n">build_ext</span><span class="p">,</span>
+    <span class="s">'build_deps'</span><span class="p">:</span> <span class="n">build_deps</span><span class="p">,</span>
+    <span class="s">'build_module'</span><span class="p">:</span> <span class="n">build_module</span><span class="p">,</span>
+    <span class="s">'develop'</span><span class="p">:</span> <span class="n">develop</span><span class="p">,</span>
+    <span class="s">'install'</span><span class="p">:</span> <span class="n">install</span><span class="p">,</span>
+    <span class="s">'clean'</span><span class="p">:</span> <span class="n">clean</span><span class="p">,</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>大家 python 肯定写的比我多，<code class="highlighter-rouge">python setup.py install</code> 大家肯定是见过的，那么我们可以看看这里 <code class="highlighter-rouge">install</code> 是在干什么。</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">install</span><span class="p">(</span><span class="n">setuptools</span><span class="o">.</span><span class="n">command</span><span class="o">.</span><span class="n">install</span><span class="o">.</span><span class="n">install</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">skip_build</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">run_command</span><span class="p">(</span><span class="s">'build_deps'</span><span class="p">)</span>
+        <span class="n">setuptools</span><span class="o">.</span><span class="n">command</span><span class="o">.</span><span class="n">install</span><span class="o">.</span><span class="n">install</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>嗯……默认实现外加运行 <code class="highlighter-rouge">build_deps</code>。但是默认实现是什么呢？看起来有一点麻烦。</p>
+
+<p>但是，默认实现还能干什么呢，还不就是 build 需要 build 的东西么？需要 build 的东西是什么呢，必然就在 <code class="highlighter-rouge">build*</code> 命令里了。</p>
+
+<p>我们看一下：一共五个 <code class="highlighter-rouge">build</code>，<code class="highlighter-rouge">build_py</code> 是默认实现估计干不了啥，<code class="highlighter-rouge">build_ext</code> 显然是 build extensions，<code class="highlighter-rouge">build_module</code> 调用了 <code class="highlighter-rouge">build_py</code> 和 <code class="highlighter-rouge">build_ext</code>，还有一个 <code class="highlighter-rouge">build_deps</code>。</p>
+
+<p>显然，我们只需要看看 <code class="highlighter-rouge">build_deps</code> 如何处理了哪些依赖和 <code class="highlighter-rouge">build_ext</code> 如何如何编译 extension 就可以了。</p>
+
+<p>从另一个角度，<code class="highlighter-rouge">setuptools</code> 是一个很完善的库，所以从命令行应该可以获取到一些信息，我们试试</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>python setup.py <span class="nt">-h</span>
+</code></pre></div></div>
+
+<p>就可以知道 <code class="highlighter-rouge">--help-commands</code> 命令，再通过</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>python setup.py <span class="nt">--help-commands</span>
+</code></pre></div></div>
+
+<p>就可以得到每个命令的说明。</p>
+
+<p>显然 <code class="highlighter-rouge">build</code> 命令是我们唯一需要的。</p>
+
+<p>让我们先试一试，</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>pip install pyyaml numpy
+python setup.py build
+</code></pre></div></div>
+
+<p>Works like a charm.</p>
+
+<h2 id="why">Why?</h2>
+
+<p>为什么不仔细读每一行代码，尤其是，为什么不先读一下 <code class="highlighter-rouge">setuptools</code> 的文档呢？</p>
+
+<p>最主要的原因，当然是因为 <code class="highlighter-rouge">setuptools</code> 也好，具体编译的 flag 也好，都无关我们的目的。在这里花费时间没有什么意义。</p>
+
+<p>另外，我想要说明一个我阅读代码的大方向和思路。PyTorch 刚好是用 python 写的 <code class="highlighter-rouge">setup.py</code>，比较简单，你也可以 argue 说学了也比较实用。若是改天遇上一个手写 Makefile 的怎么办？难不成先学一遍 Makefile 不成？但是你又没有写 Makefile 的需求，也不会对你了解项目有太大帮助，而且这年头你也不太可能在任何新项目中写 Makefile 了，而且学 Makefile 是不是应该先精通 shell？若是你读 TensorFlow，还要先学会 Bazel 么，学会了，你自己的项目用得起来么？</p>
+
+<p>接口也好，语法也罢，都是无关痛痒的，今天看了一遍，明天就忘了。种种 tools，追根究底只是一个 implementation，就说 Bazel，有意义的问题只有，为什么它那么快（可能还有，为什么你用不起来），至于如何配置，不过是一个某种意义上很随意的选择，除非决定要用，不然没什么学习的价值。说老实话，我连很多我自己一行行写出来的东西都不记得了。看其他的项目，我觉得最有价值的是学到正确的做法是什么。比如说对于这个 <code class="highlighter-rouge">setup.py</code>，如果通过上面的阅读，理解 <code class="highlighter-rouge">setup.py</code> 的基本工作模式和原理，并且知道在 python 中如果开发一个库应该使用 <code class="highlighter-rouge">setup.py</code> 和 <code class="highlighter-rouge">setuptools</code> （或者 <code class="highlighter-rouge">distutils</code>）来打包分发就可以了。最好还可以记住 PyTorch 用到了 <code class="highlighter-rouge">setuptools</code> 比较全面的功能，可以在需要的时候拿来作为 demo 参考，我觉得就足够了。</p>
+
+<h2 id="whats-in-there">What’s in there</h2>
+
+<p>好吧，那么依赖有哪些呢，ATen，nanopb，libshm，gloo，THD，nccl，调用 <code class="highlighter-rouge">torch/lib/build_libs.sh</code> 来编译。</p>
+
+<p><code class="highlighter-rouge">torch/lib/build_libs.sh</code> 就很清楚了，利用 CMake 编译这些依赖，现在还没必要仔细研究编译过程。</p>
+
+<p>重要的是这些依赖的功能。</p>
+
+<p>ATen，核心中的核心，PyTorch 的 Tensor 库。</p>
+
+<p>nanopb，看起来是一个精简版的 protobuf，PyTorch 需要它做什么呢？还不清楚。不过可以想见，应当可以用在多机并行和保存（序列化）模型的过程中。暂时不需要深究这些问题，重要的是我们要记住有这个库可以做这些事就可以了。</p>
+
+<p>libshm，共享内存。我的第一反应是用在 <code class="highlighter-rouge">DataLoader</code> 或者类似的情况中，在多进程间共享 Tensor。Again，我写这一系列文章的时候对于 PyTorch 代码的理解并不比大家多，所以我们可以一起来慢慢看。</p>
+
+<p>gloo，并行算法库。</p>
+
+<p>THD，从名字来看应当是并行时用到的 Tensor 库，不过信息太少，我们之后再看。</p>
+
+<p>另外可以看到 <code class="highlighter-rouge">torch/lib</code> 下面的 <code class="highlighter-rouge">pybind11</code>。用来绑定 python 和 C++ 的结构的库。如果读一下 <code class="highlighter-rouge">README</code>，它是 header only 的，再在项目中搜索一下 <code class="highlighter-rouge">pybind</code> 就会看到它是在编译 PyTorch 的 extension 的时候编译的。</p>
+
+<p>好，那么大体上我们已经把整个结构理清了。</p>
+
+<h2 id="how-pytorch-is-organized">How PyTorch is organized</h2>
+
+<p><code class="highlighter-rouge">aten</code>: Tensor 库。顺带一说，虽然理论上是说 Torch 和 PyTorch 要齐头并进，但是事实上 Torch 已经快半年没更新了，到现在 Torch 也没用上新的 Aten ……</p>
+
+<p><code class="highlighter-rouge">cmake</code>: 一些 CMake 相关的脚本。</p>
+
+<p><code class="highlighter-rouge">docs</code>: 文档，在官网上读就可以了。</p>
+
+<p><code class="highlighter-rouge">test</code>: 可以略过。</p>
+
+<p><code class="highlighter-rouge">tools</code> 和 <code class="highlighter-rouge">torch</code> …… 嗯……</p>
+
+<p>我们再回过头来看看 <code class="highlighter-rouge">setup.py</code> 里的 <code class="highlighter-rouge">packages</code>，可以看到</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">packages</span> <span class="o">=</span> <span class="n">find_packages</span><span class="p">(</span><span class="n">exclude</span><span class="o">=</span><span class="p">(</span><span class="s">'tools'</span><span class="p">,</span> <span class="s">'tools.*'</span><span class="p">,))</span>
+</code></pre></div></div>
+
+<p>最终安装的 python 代码只包括 <code class="highlighter-rouge">torch</code> 下的的文件。显然， <code class="highlighter-rouge">tools</code> 只是为了开发和编译而存在的。</p>
+
+<p><code class="highlighter-rouge">tools</code>: 开发和编译中的工具。</p>
+
+<p><code class="highlighter-rouge">torch</code>: PyTorch 的源代码。</p>
+
+<h2 id="lets-get-the-party-started">Let’s get the party started</h2>
+
+<p>好，我们可以正式的开始阅读代码了。代码主要分布在 <code class="highlighter-rouge">aten</code> 和 <code class="highlighter-rouge">torch</code> 两个文件夹中。首先，我们就从 PyTorch 的最核心，最根本的部分，Aten 开始。</p>
+
+
+</article>
+
+
+
+
+
+
+  <div id="disqus_thread"></div>
+  <script type="text/javascript">
+    var disqus_shortname  = 'zhuhaow';
+    var disqus_identifier = '/machine/learning/pytorch/2018/02/06/a-random-walk-in-pytorch-2';
+    var disqus_title      = "A random walk in PyTorch (2) -- Build the World";
+
+    (function() {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+  </script>
+  <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+
+
+
+
+
+      </div>
+    </div>
+  </div>
+
+  <footer class="center">
+  <div class="measure">
+    <small>
+      Theme crafted with &lt;3 by <a href="http://johnotander.com">John Otander</a> (<a href="https://twitter.com/4lpine">@4lpine</a>).<br>
+      &lt;/&gt; available on <a href="https://github.com/johnotander/pixyll">GitHub</a>.
+    </small>
+  </div>
+</footer>
+
+
+</body>
+</html>

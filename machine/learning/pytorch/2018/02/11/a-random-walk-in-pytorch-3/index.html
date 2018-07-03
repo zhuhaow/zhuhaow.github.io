@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html>
+<head>
+    
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>A random walk in PyTorch (3) -- My Precious! &#8211; Samples</title>
+    <link rel="dns-prefetch" href="//maxcdn.bootstrapcdn.com">
+    <link rel="dns-prefetch" href="//cdn.mathjax.org">
+    <link rel="dns-prefetch" href="//cdnjs.cloudflare.com">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Just some random thoughts.">
+    <meta name="robots" content="all">
+    <meta name="author" content="Zhuhao Wang">
+    
+    <meta name="keywords" content="machine, learning, pytorch">
+    <link rel="canonical" href="https://blog.zhuhaow.me/machine/learning/pytorch/2018/02/11/a-random-walk-in-pytorch-3/">
+    <link rel="alternate" type="application/rss+xml" title="RSS Feed for Samples" href="/feed.xml" />
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/pixyll.css?201807031005" type="text/css">
+
+    <!-- Fonts -->
+    
+    <link href='//fonts.googleapis.com/css?family=Merriweather:900,900italic,300,300italic&subset=latin-ext,latin' rel='stylesheet' type='text/css'>
+    <link href='//fonts.googleapis.com/css?family=Lato:900,300&subset=latin-ext,latin' rel='stylesheet' type='text/css'>
+    
+    
+      <link href="//maxcdn.bootstrapcdn.com/font-awesome/latest/css/font-awesome.min.css" rel="stylesheet">
+    
+
+    <!-- MathJax -->
+    
+      <script type="text/javascript" src="//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+      </script>
+      
+
+    <!-- Verifications -->
+    
+    
+
+    <!-- Open Graph -->
+    <!-- From: https://github.com/mmistakes/hpstr-jekyll-theme/blob/master/_includes/head.html -->
+    <meta property="og:locale" content="en_US">
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="A random walk in PyTorch (3) -- My Precious!">
+    <meta property="og:description" content="Just some random thoughts.">
+    <meta property="og:url" content="https://blog.zhuhaow.me/machine/learning/pytorch/2018/02/11/a-random-walk-in-pytorch-3/">
+    <meta property="og:site_name" content="Samples">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary" />
+    
+    <meta name="twitter:title" content="A random walk in PyTorch (3) -- My Precious!" />
+    <meta name="twitter:description" content="Just some random thoughts." />
+    <meta name="twitter:url" content="https://blog.zhuhaow.me/machine/learning/pytorch/2018/02/11/a-random-walk-in-pytorch-3/" />
+
+    <!-- Icons -->
+    <link rel="apple-touch-icon" sizes="57x57" href="/apple-touch-icon-57x57.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="/apple-touch-icon-114x114.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="/apple-touch-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="/apple-touch-icon-144x144.png">
+    <link rel="apple-touch-icon" sizes="60x60" href="/apple-touch-icon-60x60.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="/apple-touch-icon-120x120.png">
+    <link rel="apple-touch-icon" sizes="76x76" href="/apple-touch-icon-76x76.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/apple-touch-icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-180x180.png">
+    <link rel="icon" type="image/png" href="/favicon-192x192.png" sizes="192x192">
+    <link rel="icon" type="image/png" href="/favicon-160x160.png" sizes="160x160">
+    <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96">
+    <link rel="icon" type="image/png" href="/favicon-16x16.png" sizes="16x16">
+    <link rel="icon" type="image/png" href="/favicon-32x32.png" sizes="32x32">
+
+    
+    <script type="text/javascript">
+       (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+       (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+       m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+       })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+       ga('create', 'UA-55631276-1', 'auto');
+       ga('send', 'pageview');
+    </script>
+    
+</head>
+
+<body class="site">
+  
+	
+
+  <div class="site-wrap">
+    <header class="site-header px2 px-responsive">
+  <div class="mt2 wrap">
+    <div class="measure">
+      <a href="https://blog.zhuhaow.me" class="site-title">Samples</a>
+      <nav class="site-nav">
+        
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+
+      </nav>
+      <div class="clearfix"></div>
+      
+        <div class="social-icons">
+  <div class="social-icons-right">
+    
+      <a class="fa fa-github" href="https://github.com/zhuhaow"></a>
+    
+    
+    
+    <a class="fa fa-rss" href="/feed.xml"></a>
+    
+    
+    
+    
+    
+    
+    
+    
+  </div>
+  <div class="right">
+    
+    
+    
+  </div>
+</div>
+<div class="clearfix"></div>
+
+      
+    </div>
+  </div>
+</header>
+
+
+    <div class="post p2 p-responsive wrap" role="main">
+      <div class="measure">
+        
+
+
+<div class="post-header mb2">
+  <h1>A random walk in PyTorch (3) -- My Precious!</h1>
+  <span class="post-meta">Feb 11, 2018</span><br>
+  
+    <!-- <span class="post-meta small"> -->
+      <!--  -->
+      <!-- 10 minute read -->
+    <!--  -->
+    <!-- </span> -->
+</div>
+
+<article class="post-content">
+  <p>好，开篇又是老问题，<code class="highlighter-rouge">aten/src</code> 下面的文件那么多，怎么读呢？</p>
+
+<p>我强烈建议你先自己试试，理清<code class="highlighter-rouge">aten</code>下面的代码结构。</p>
+
+<p>从难到易：</p>
+
+<ol>
+  <li>不看 readme 行不行？</li>
+  <li>不看 <code class="highlighter-rouge">doc</code> 行不行。</li>
+  <li>不行就再看一下 <code class="highlighter-rouge">doc</code> 吧。</li>
+</ol>
+
+<p>好，那么我们开始。</p>
+
+<h2 id="hello-aten">Hello, ATen</h2>
+
+<p>注意到 ATen 是用 CMake 编译的，我们先看看 <code class="highlighter-rouge">CMakeLists.txt</code>。</p>
+
+<p>不懂 CMake 不要紧，反正不要你写。</p>
+
+<p>我们来看一下，设置一些基本参数；设置编译的 flag；找了一些依赖库，注意一下（可选或必须）依赖库有 CUDA，OpenMP，MAGMA，BLAS，LAPACK；检查了 CPU 的指令集；还检测了一些编译器的 bug （feature）。大多数都只是细节，无需关心。依赖库需要用到，我们需要了解一下它们的用途，我就不展开了。</p>
+
+<p>接下来就开始处理 ATen 了，可以看到：</p>
+
+<div class="language-cmake highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">add_definitions</span><span class="p">(</span>-DTH_INDEX_BASE=0<span class="p">)</span>
+<span class="nb">set</span><span class="p">(</span>TH_LINK_STYLE STATIC<span class="p">)</span>
+<span class="nb">add_subdirectory</span><span class="p">(</span>src/TH<span class="p">)</span>
+<span class="nb">include_directories</span><span class="p">(</span>
+  <span class="c1"># dense</span>
+  <span class="si">${</span><span class="nv">CMAKE_CURRENT_SOURCE_DIR</span><span class="si">}</span>/src/TH
+  <span class="si">${</span><span class="nv">CMAKE_CURRENT_SOURCE_DIR</span><span class="si">}</span>/src/THC
+  <span class="si">${</span><span class="nv">CMAKE_CURRENT_BINARY_DIR</span><span class="si">}</span>/src/TH
+  <span class="si">${</span><span class="nv">CMAKE_CURRENT_BINARY_DIR</span><span class="si">}</span>/src/THC
+  <span class="c1"># sparse</span>
+  <span class="si">${</span><span class="nv">CMAKE_CURRENT_SOURCE_DIR</span><span class="si">}</span>/src/THS
+  <span class="si">${</span><span class="nv">CMAKE_CURRENT_SOURCE_DIR</span><span class="si">}</span>/src/THCS
+  <span class="si">${</span><span class="nv">CMAKE_CURRENT_BINARY_DIR</span><span class="si">}</span>/src/THS
+  <span class="si">${</span><span class="nv">CMAKE_CURRENT_BINARY_DIR</span><span class="si">}</span>/src/THCS
+
+  <span class="si">${</span><span class="nv">CMAKE_CURRENT_SOURCE_DIR</span><span class="si">}</span>/src
+  <span class="si">${</span><span class="nv">CMAKE_CURRENT_BINARY_DIR</span><span class="si">}</span>/src<span class="p">)</span>
+<span class="nb">add_subdirectory</span><span class="p">(</span>src/THNN<span class="p">)</span>
+<span class="nb">add_subdirectory</span><span class="p">(</span>src/THS<span class="p">)</span>
+
+<span class="nb">if</span><span class="p">(</span>NO_CUDA<span class="p">)</span>
+  <span class="nb">message</span><span class="p">(</span><span class="s2">"disabling CUDA because NO_CUDA is set"</span><span class="p">)</span>
+  <span class="nf">SET</span><span class="p">(</span>CUDA_FLAG -n<span class="p">)</span>
+  <span class="nf">SET</span><span class="p">(</span>AT_CUDA_ENABLED 0<span class="p">)</span>
+<span class="nb">else</span><span class="p">()</span>
+  <span class="nf">SET</span><span class="p">(</span>AT_CUDA_ENABLED 1<span class="p">)</span>
+  <span class="nf">INCLUDE_DIRECTORIES</span><span class="p">(</span><span class="si">${</span><span class="nv">CUDA_INCLUDE_DIRS</span><span class="si">}</span><span class="p">)</span>
+  <span class="nb">find_package</span><span class="p">(</span>CUDA 5.5 REQUIRED<span class="p">)</span>
+  <span class="nb">add_subdirectory</span><span class="p">(</span>src/THC<span class="p">)</span>
+  <span class="nb">add_subdirectory</span><span class="p">(</span>src/THCUNN<span class="p">)</span>
+  <span class="nb">add_subdirectory</span><span class="p">(</span>src/THCS<span class="p">)</span>
+<span class="nb">endif</span><span class="p">()</span>
+</code></pre></div></div>
+
+<p>我们可以看到，这里添加了 <code class="highlighter-rouge">src/TH</code>，<code class="highlighter-rouge">src/THNN</code>，<code class="highlighter-rouge">src/THS</code>三个子文件夹。并且，根据有没有 CUDA，又进一步添加了 <code class="highlighter-rouge">src/THC</code>，<code class="highlighter-rouge">src/THCUNN</code>，<code class="highlighter-rouge">src/THCS</code>。这就非常清楚了：有三组 varations，第一个是普通的 dense tensor，第二个是 sparse tensor （注释里都告诉你了），第三个明显和神经网络有关，做什么的还不知道，同时每一个 tensor 还有一个对应的 GPU 版本。</p>
+
+<p>加下来添加了依赖 CuDNN 和 NNPACK。</p>
+
+<p>注意到：</p>
+
+<div class="language-cmake highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">set</span><span class="p">(</span>cwrap_files
+  <span class="si">${</span><span class="nv">CMAKE_CURRENT_SOURCE_DIR</span><span class="si">}</span>/src/ATen/Declarations.cwrap
+  <span class="si">${</span><span class="nv">CMAKE_CURRENT_SOURCE_DIR</span><span class="si">}</span>/src/THNN/generic/THNN.h
+  <span class="si">${</span><span class="nv">CMAKE_CURRENT_SOURCE_DIR</span><span class="si">}</span>/src/THCUNN/generic/THCUNN.h
+  <span class="si">${</span><span class="nv">CMAKE_CURRENT_SOURCE_DIR</span><span class="si">}</span>/src/ATen/nn.yaml
+  <span class="si">${</span><span class="nv">CMAKE_CURRENT_SOURCE_DIR</span><span class="si">}</span>/src/ATen/native/native_functions.yaml
+<span class="p">)</span>
+</code></pre></div></div>
+
+<p>添加了几个文件，这些文件显然很特殊，我们需要注意。</p>
+
+<p>最后又添加了<code class="highlighter-rouge">src/ATen</code>，test 可以忽略。contrib 就不用管了，我们主要是看核心部分。</p>
+
+<p>OK，那么 <code class="highlighter-rouge">src/ATen</code> 是干什么的呢？其实从添加这些子文件夹的顺序和文件夹的名字就应该猜的出来 <code class="highlighter-rouge">src/ATen</code> 就是这六个 tensor 的具体实现的文件夹的接口。不过你们可能要验证一下，所以我们继续看。</p>
+
+<p>在 <code class="highlighter-rouge">src/ATen</code> 下搜索 <code class="highlighter-rouge">TH.h</code>，可以看到在 <code class="highlighter-rouge">gen.py</code> 中有引用，这也就意味着在生成 ATen 的某些文件的时候需要用到 <code class="highlighter-rouge">TH.h</code>，可见 ATen 封装了 TH。 Q.E.D.</p>
+
+<p>好吧，说实话，我开始也不是这么找的。而是：</p>
+
+<p>在 <code class="highlighter-rouge">src/ATen</code> 中，可以看到 <code class="highlighter-rouge">ATen.h</code>：</p>
+
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">#pragma once
+</span>
+<span class="cp">#include "ATen/ATenGeneral.h"
+#include "ATen/Allocator.h"
+#include "ATen/Scalar.h"
+#include "ATen/Type.h"
+#include "ATen/Generator.h"
+#include "ATen/Context.h"
+#include "ATen/Storage.h"
+#include "ATen/Tensor.h"
+#include "ATen/TensorGeometry.h"
+#include "ATen/Functions.h"
+#include "ATen/Formatting.h"
+#include "ATen/TensorOperators.h"
+#include "ATen/TensorMethods.h"
+</span></code></pre></div></div>
+
+<p>注意到这里有两个文件可能有重要内容，<code class="highlighter-rouge">ATen/ATenGeneral.h</code> 和 <code class="highlighter-rouge">ATen/Tensor.h</code>，前一个什么也没有，后一个并不存在。不存在只有一个可能，这个 header 是生成的。</p>
+
+<p>我们打开 <code class="highlighter-rouge">Aten/CMakeLists.txt</code>，搜索 <code class="highlighter-rouge">Tensor</code> 是搜不到任何东西的，这就意味着，这个文件是批量生成的，我们又看到 <code class="highlighter-rouge">ATen</code> 下面有 <code class="highlighter-rouge">templates</code> 文件夹，而其中刚好有 <code class="highlighter-rouge">Tensor.h</code>。</p>
+
+<p>但是，我们找不到任何引用 <code class="highlighter-rouge">TH.h</code> 的地方，这不合理，所以需要搜索一下，就可以找到之前的 <code class="highlighter-rouge">gen.py</code> 了。弄明白 <code class="highlighter-rouge">gen.py</code> 很麻烦，因为我们并不知道究竟这些生成的文件的目的和逻辑是什么（虽然并不难猜）。最重要的是，我们已经有了生成的结果，<code class="highlighter-rouge">doc/Tensor.h</code> 了。</p>
+
+<p>通过 <code class="highlighter-rouge">doc/Tensor.h</code> 可以看到：</p>
+
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">struct</span> <span class="n">Tensor</span> <span class="o">:</span> <span class="k">public</span> <span class="n">detail</span><span class="o">::</span><span class="n">TensorBase</span> <span class="p">{</span>
+
+<span class="p">...</span>
+
+<span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">toType</span><span class="p">(</span><span class="k">const</span> <span class="n">Type</span> <span class="o">&amp;</span> <span class="n">t</span><span class="p">)</span> <span class="k">const</span><span class="p">;</span>
+<span class="kr">inline</span> <span class="n">Tensor</span> <span class="o">&amp;</span> <span class="n">copy_</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span> <span class="o">&amp;</span> <span class="n">src</span><span class="p">);</span>
+<span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">toType</span><span class="p">(</span><span class="n">ScalarType</span> <span class="n">t</span><span class="p">)</span> <span class="k">const</span><span class="p">;</span>
+<span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">toBackend</span><span class="p">(</span><span class="n">Backend</span> <span class="n">b</span><span class="p">)</span> <span class="k">const</span><span class="p">;</span>
+
+<span class="p">...</span>
+
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p><code class="highlighter-rouge">Tensor</code> 是一个 tensor 的封装，这个 tensor 可能是各种不同的数值类型，也可以在内存或是显存中。换言之，<code class="highlighter-rouge">Tensor</code> 包装了 TH，THC（sparse 和 dense 在任何库中都是不可能隐式转换的），通过统一的函数调用完成了不同数据类型和不同架构上的运算。</p>
+
+<h2 id="follow-the-numpy">Follow the Numpy</h2>
+
+<p>在继续之前，我建议所有没有（正确）使用过 numpy 或者 Matlab 或者 R 的同学读一下关于 numpy 的一些基本原理（不是教程），这里推荐 From Python to Numpy <sup id="fnref:1"><a href="#fn:1" class="footnote">1</a></sup>，不过大家也可以读自己喜欢的。网上这类文章应该不少，写的都比我好，所以我接下来就不会再重复了。</p>
+
+<p>本质上，除了 <code class="highlighter-rouge">Tensor</code> 支持 GPU，<code class="highlighter-rouge">Tensor</code> 和 numpy 中的 <code class="highlighter-rouge">ndarray</code> 要做的事基本一致。所以如果你理解 numpy 的基本原理，那么 TH 想要做的事情是显而易见的。</p>
+
+<h2 id="dry">DRY</h2>
+
+<p>现在读读 <code class="highlighter-rouge">src/TH/THStorage.h</code>。我估计很多人已经晕了。</p>
+
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">#define THStorage        TH_CONCAT_3(TH,Real,Storage)
+#define THStorage_(NAME) TH_CONCAT_4(TH,Real,Storage_,NAME)
+</span>
+<span class="cm">/* fast access methods */</span>
+<span class="cp">#define TH_STORAGE_GET(storage, idx) ((storage)-&gt;data[(idx)])
+#define TH_STORAGE_SET(storage, idx, value) ((storage)-&gt;data[(idx)] = (value))
+</span>
+<span class="cp">#include "generic/THStorage.h"
+#include "THGenerateAllTypes.h"
+</span>
+<span class="cp">#include "generic/THStorage.h"
+#include "THGenerateHalfType.h"
+</span>
+<span class="cp">#include "generic/THStorageCopy.h"
+#include "THGenerateAllTypes.h"
+</span>
+<span class="cp">#include "generic/THStorageCopy.h"
+#include "THGenerateHalfType.h"
+</span></code></pre></div></div>
+
+<p>我们先看 <code class="highlighter-rouge">generic/THStorage.h</code>：</p>
+
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">typedef</span> <span class="k">struct</span> <span class="n">THStorage</span>
+<span class="p">{</span>
+    <span class="n">real</span> <span class="o">*</span><span class="n">data</span><span class="p">;</span>
+    <span class="kt">ptrdiff_t</span> <span class="n">size</span><span class="p">;</span>
+    <span class="kt">int</span> <span class="n">refcount</span><span class="p">;</span>
+    <span class="kt">char</span> <span class="n">flag</span><span class="p">;</span>
+    <span class="n">THAllocator</span> <span class="o">*</span><span class="n">allocator</span><span class="p">;</span>
+    <span class="kt">void</span> <span class="o">*</span><span class="n">allocatorContext</span><span class="p">;</span>
+    <span class="k">struct</span> <span class="n">THStorage</span> <span class="o">*</span><span class="n">view</span><span class="p">;</span>
+<span class="p">}</span> <span class="n">THStorage</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>我觉得 <code class="highlighter-rouge">real</code> 这个 macro 的名字起的实在很令人误解，但是我们可以看到它就是那一堆 <code class="highlighter-rouge">THGenerate*Type.h</code> 里面定义的各种数值类型。所以不难看出，这里的 <code class="highlighter-rouge">THStorage</code> 其实就是代表了一块内存，<code class="highlighter-rouge">data</code> 就是内存地址，<code class="highlighter-rouge">size</code> 是数组大小，<code class="highlighter-rouge">refcount</code> 标记了引用数（这样我们就可以在多个 <code class="highlighter-rouge">Tensor</code> 间共享同一块数据了。You should see that coming, right?），<code class="highlighter-rouge">flag</code> 标记了内存的一些特性（注意到这些 flag 就定义在这个 struct 定义的上面了么），<code class="highlighter-rouge">allocator</code> 和 <code class="highlighter-rouge">allocatorContext</code> 告诉我们这块内存是怎么来的，以及它将要怎么没的。</p>
+
+<p>那么 <code class="highlighter-rouge">view</code> 是什么呢？稍微搜索一下代码就可以在 <code class="highlighter-rouge">torch/csrc/generic</code> 发现它是用来代表 <code class="highlighter-rouge">data</code> 并不指向 allocator 返回的内存块开头的时候用来指向最原始的数据块的。这个 field 加入的比较晚，可见它并不是核心功能（我还不知道它是解决什么的）。</p>
+
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">static</span> <span class="n">PyObject</span> <span class="o">*</span> <span class="nf">THPStorage_</span><span class="p">(</span><span class="n">newTHView</span><span class="p">)(</span><span class="n">THStorage</span> <span class="o">*</span><span class="n">base</span><span class="p">,</span> <span class="kt">ptrdiff_t</span> <span class="n">offset</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">size</span><span class="p">)</span>
+<span class="p">{</span>
+  <span class="kt">void</span> <span class="o">*</span><span class="n">data</span> <span class="o">=</span> <span class="p">(</span><span class="kt">char</span><span class="o">*</span><span class="p">)</span><span class="n">base</span><span class="o">-&gt;</span><span class="n">data</span> <span class="o">+</span> <span class="n">offset</span><span class="p">;</span>
+  <span class="n">THStoragePtr</span> <span class="n">view</span><span class="p">(</span><span class="n">THStorage_</span><span class="p">(</span><span class="n">newWithData</span><span class="p">)(</span><span class="n">LIBRARY_STATE</span> <span class="p">(</span><span class="n">real</span><span class="o">*</span><span class="p">)</span><span class="n">data</span><span class="p">,</span> <span class="n">size</span><span class="p">));</span>
+  <span class="n">view</span><span class="o">-&gt;</span><span class="n">flag</span> <span class="o">=</span> <span class="n">TH_STORAGE_REFCOUNTED</span> <span class="o">|</span> <span class="n">TH_STORAGE_VIEW</span><span class="p">;</span>
+  <span class="n">view</span><span class="o">-&gt;</span><span class="n">view</span> <span class="o">=</span> <span class="n">base</span><span class="p">;</span>       <span class="o">&lt;----------</span> <span class="n">here</span><span class="o">!</span>
+  <span class="n">THStorage_</span><span class="p">(</span><span class="n">retain</span><span class="p">)(</span><span class="n">LIBRARY_STATE</span> <span class="n">base</span><span class="p">);</span>
+  <span class="k">return</span> <span class="n">THPStorage_</span><span class="p">(</span><span class="n">New</span><span class="p">)(</span><span class="n">view</span><span class="p">.</span><span class="n">release</span><span class="p">());</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>明白了 <code class="highlighter-rouge">src/TH/generic/THStorage.h</code> 的内容就明白了这个文件的目的。在基本的运算中，我们需要支持 <code class="highlighter-rouge">float</code>，<code class="highlighter-rouge">double</code>，<code class="highlighter-rouge">int</code> 等各种数据类型，而这些类型的的逻辑都是完全一样的。很自然的，我们会想到使用 template，但是 PyTorch 并不想使用 template，可能的原因有很多，我并不是开发者，就不乱猜了。既然不使用 template，那么我们就需要生成这些只有类型不同的代码，这就是</p>
+
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">#include "generic/THStorage.h"
+#include "THGenerateAllTypes.h"
+</span></code></pre></div></div>
+
+<p>的作用。</p>
+
+<p>明白了这一点，我们再看看这些代码是如何生成的。</p>
+
+<p>在讲代码如何生成之前，我先大致讲一下宏生成代码常用的一个技巧。因为这个其实是 C 和 C++ 的问题，和 PyTorch 实在没什么关系，我不展开了。</p>
+
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="cp">#define TH_CONCAT_3(x,y,z) TH_CONCAT_3_EXPAND(x,y,z)
+#define TH_CONCAT_3_EXPAND(x,y,z) x ## y ## z
+</span>
+<span class="cp">#define TH_CONCAT_4_EXPAND(x,y,z,w) x ## y ## z ## w
+#define TH_CONCAT_4(x,y,z,w) TH_CONCAT_4_EXPAND(x,y,z,w)
+</span>
+
+<span class="cp">#define THStorage        TH_CONCAT_3(TH,Real,Storage)
+#define THStorage_(NAME) TH_CONCAT_4(TH,Real,Storage_,NAME)
+</span></code></pre></div></div>
+
+<p>这里的 <code class="highlighter-rouge">TH_CONCAT_3</code> 是干什么的？这里其实就是把 <code class="highlighter-rouge">TH</code>，<code class="highlighter-rouge">Real</code>，<code class="highlighter-rouge">Storage</code> 这三个字符拼起来，并展开其中的宏。至于为什么要绕到 <code class="highlighter-rouge">TH_CONCAT_3_EXPAND</code> 去，大家可以看一下
+https://gcc.gnu.org/onlinedocs/cpp/Argument-Prescan.html#Argument-Prescan ，核心在于 concat(##) 的时候 token 不展开，所以要先展开再 concat。</p>
+
+<p>以 <code class="highlighter-rouge">double</code> 为例：</p>
+
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">#define real double
+#define Real Double
+</span>
+<span class="n">real</span><span class="o">*</span> <span class="n">THStorage_</span><span class="p">(</span><span class="n">data</span><span class="p">)(</span><span class="k">const</span> <span class="n">THStorage</span><span class="o">*</span><span class="p">);</span>
+<span class="c1">// is equivalent to 
+</span><span class="kt">double</span><span class="o">*</span> <span class="n">THDoubleStorage_data</span><span class="p">(</span><span class="k">const</span> <span class="n">THDoubleStorage</span><span class="o">*</span><span class="p">);</span>
+</code></pre></div></div>
+
+<p>接下来我们想的就是把同样的定义用不同的类型都生成一遍，最直观的想法我们会这么做呢？大概是这样</p>
+
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// The umbrella header for all type
+</span>
+<span class="cp">#define real double
+#define Real Double
+#include "generic/some_header.h"
+#undef real
+#undef Real
+</span>
+<span class="cp">#define real int
+#define Real Int
+#include "generic/some_header.h"
+#undef real
+#undef Real
+</span></code></pre></div></div>
+
+<p>实际中，需要定义的宏可能不止两个，我们最终可能需要写成</p>
+
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// The umbrella header for all types
+</span>
+<span class="cp">#include "def_for_double.h"
+#include "generic/some_header.h"
+#include "undef.h"
+</span>
+<span class="cp">#include "def_for_int.h"
+#include "generic/some_header.h"
+#include "undef.h"
+</span>
+</code></pre></div></div>
+
+<p>这样的形式，相当繁琐。如果我们要增加新的类型，就意味着要修改所有的生成代码。</p>
+
+<p>当然，考虑到实际上可能永远都不会有新的类型，所以这样除了重复多了一些以外没也有什么缺点。</p>
+
+<p>如果想要减少重复，显然，我们需要将需要生成的模版文件作为“参数”，而不是把类型作为“参数”。</p>
+
+<p>这也就是</p>
+
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">#include "generic/THStorage.h"
+#include "THGenerateAllTypes.h"
+</span></code></pre></div></div>
+
+<p>的目的。先导入需要生成的文件，然后在 <code class="highlighter-rouge">THGenerateAllTypes.h</code> 中生成所有的类型。</p>
+
+<p>看一下 <code class="highlighter-rouge">generic/THStorage.h</code>，</p>
+
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">#ifndef TH_GENERIC_FILE
+#define TH_GENERIC_FILE "generic/THStorage.h"
+#else
+</span>
+<span class="p">...</span>
+
+<span class="cp">#define TH_STORAGE_REFCOUNTED 1
+#define TH_STORAGE_RESIZABLE  2
+#define TH_STORAGE_FREEMEM    4
+#define TH_STORAGE_VIEW       8
+</span>
+<span class="k">typedef</span> <span class="k">struct</span> <span class="n">THStorage</span>
+<span class="p">{</span>
+    <span class="n">real</span> <span class="o">*</span><span class="n">data</span><span class="p">;</span>
+    <span class="kt">ptrdiff_t</span> <span class="n">size</span><span class="p">;</span>
+    <span class="kt">int</span> <span class="n">refcount</span><span class="p">;</span>
+    <span class="kt">char</span> <span class="n">flag</span><span class="p">;</span>
+    <span class="n">THAllocator</span> <span class="o">*</span><span class="n">allocator</span><span class="p">;</span>
+    <span class="kt">void</span> <span class="o">*</span><span class="n">allocatorContext</span><span class="p">;</span>
+    <span class="k">struct</span> <span class="n">THStorage</span> <span class="o">*</span><span class="n">view</span><span class="p">;</span>
+<span class="p">}</span> <span class="n">THStorage</span><span class="p">;</span>
+
+<span class="cp">#endif
+</span></code></pre></div></div>
+
+<p>在第一次导入的时候 <code class="highlighter-rouge">TH_GENERIC_FILE</code> 还没有定义，因此只是定义了 <code class="highlighter-rouge">TH_GENERIC_FILE</code> 为自己的路径。</p>
+
+<p>具体的某个类型，比如 <code class="highlighter-rouge">float</code>，可以用对应的头文件导入，比如 <code class="highlighter-rouge">THGenerateFloatType.h</code></p>
+
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">#ifndef TH_GENERIC_FILE
+#error "You must define TH_GENERIC_FILE before including THGenerateFloatType.h"
+#endif
+</span>
+<span class="cp">#define real float
+#define accreal double
+#define TH_CONVERT_REAL_TO_ACCREAL(_val) (accreal)(_val)
+#define TH_CONVERT_ACCREAL_TO_REAL(_val) (real)(_val)
+#define Real Float
+#define THInf FLT_MAX
+#define TH_REAL_IS_FLOAT
+#line 1 TH_GENERIC_FILE
+#include TH_GENERIC_FILE    --------- This is the template header
+#undef accreal
+#undef real
+#undef Real
+#undef THInf
+#undef TH_REAL_IS_FLOAT
+#undef TH_CONVERT_REAL_TO_ACCREAL
+#undef TH_CONVERT_ACCREAL_TO_REAL
+</span>
+<span class="cp">#ifndef THGenerateManyTypes
+#undef TH_GENERIC_FILE
+#endif
+</span></code></pre></div></div>
+
+<p>当然，我们还希望可以一次导入所有类型的定义（<code class="highlighter-rouge">THGenerateAllTypes.h</code>）。</p>
+
+<p>为了简单起见，这里我用 <code class="highlighter-rouge">THGenerateFloatTypes.h</code> 解释一下这里的做法。在 <code class="highlighter-rouge">THGenerateFloatTypes.h</code> 中</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>#ifndef TH_GENERIC_FILE
+#error "You must define TH_GENERIC_FILE before including THGenerateFloatTypes.h"
+#endif
+
+#ifndef THGenerateManyTypes
+#define THFloatLocalGenerateManyTypes
+#define THGenerateManyTypes
+#endif
+
+#include "THGenerateFloatType.h"
+#include "THGenerateDoubleType.h"
+
+#ifdef THFloatLocalGenerateManyTypes
+#undef THFloatLocalGenerateManyTypes
+#undef THGenerateManyTypes
+#undef TH_GENERIC_FILE
+#endif
+</code></pre></div></div>
+
+<p>我们看到，通过使用 <code class="highlighter-rouge">THGenerateManyTypes</code> 保证 <code class="highlighter-rouge">TH_GENERIC_FILE</code> 不会在具体类型的定义结束之后被 <code class="highlighter-rouge">undef</code> 掉，这样我们可以用一个文件生成多个类型的定义。</p>
+
+<p>如果你觉得这个代码很难懂的话，这很正常，因为这里有更加清楚简单的写法。</p>
+
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">## in THStorage.h
+</span>
+<span class="cp">#define TH_CURRNET_GENERIC_FILE "generic/THStorage.h"
+#include "THGenerateAllType.h"
+#undef TH_CURRNET_GENERIC_FILE
+</span>
+
+<span class="cp">## in THGenerateAllType.h
+</span>
+<span class="cp">#include "THGenerateFloatTypes.h"
+#include "THGenerateIntTypes.h"
+</span>
+
+<span class="cp">## in THGenerateFloatTypes.h
+</span>
+<span class="cp">#include "THGenerateFloatType.h"
+#include "THGenerateDoubleType.h"
+</span>
+
+<span class="cp">## in THGenerateFloatType.h
+</span>
+<span class="cp">#ifndef TH_CURRNET_GENERIC_FILE
+#error "You must define TH_GENERIC_FILE before including THGenerateFloatType.h"
+#endif
+</span>
+<span class="cp">#define real float
+#define accreal double
+#define TH_CONVERT_REAL_TO_ACCREAL(_val) (accreal)(_val)
+#define TH_CONVERT_ACCREAL_TO_REAL(_val) (real)(_val)
+#define Real Float
+#define THInf FLT_MAX
+#define TH_REAL_IS_FLOAT
+#line 1 TH_CURRNET_GENERIC_FILE
+#include TH_CURRNET_GENERIC_FILE
+#undef accreal
+#undef real
+#undef Real
+#undef THInf
+#undef TH_REAL_IS_FLOAT
+#undef TH_CONVERT_REAL_TO_ACCREAL
+#undef TH_CONVERT_ACCREAL_TO_REAL
+</span>
+
+<span class="cp">## in generic/THStorage.h
+</span>
+<span class="cp">## Just the template code
+</span></code></pre></div></div>
+
+<p><code class="highlighter-rouge">THStorage.h</code> 中的</p>
+
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">#include "generic/THStorage.h"
+#include "THGenerateAllTypes.h"
+</span>
+<span class="cp">#include "generic/THStorage.h"
+#include "THGenerateHalfType.h"
+</span>
+<span class="cp">#include "generic/THStorageCopy.h"
+#include "THGenerateAllTypes.h"
+</span>
+<span class="cp">#include "generic/THStorageCopy.h"
+#include "THGenerateHalfType.h"
+</span></code></pre></div></div>
+
+<p>可以转换为：</p>
+
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">#define TH_CURRNET_GENERIC_FILE "generic/THStorage.h"
+#include "THGenerateAllType.h"
+#include "THGenerateHalfType.h"
+#undef TH_CURRNET_GENERIC_FILE
+</span>
+<span class="cp">#define TH_CURRNET_GENERIC_FILE "generic/THStorageCopy.h"
+#include "THGenerateAllType.h"
+#include "THGenerateHalfType.h"
+#undef TH_CURRNET_GENERIC_FILE
+</span></code></pre></div></div>
+
+<p>可以看到，不需要种种判断 define/undef，只需要把 generic header 作为“参数”就可以了。所以不是特别理解为什么 PyTorch 会写成这么麻烦的形式，唯一能想到的好处是怕大家忘了 undef <code class="highlighter-rouge">TH_CURRNET_GENERIC_FILE</code>？而且很容易令人迷惑，因为很少见到同一个头文件被直接连续 include 多次的。</p>
+
+<h2 id="half-type">Half type</h2>
+
+<p>因为我们这里用的是 TH 作为例子，所以 half 看起来似乎就是普通的 <code class="highlighter-rouge">float</code>，没有任何意义。</p>
+
+<p>神经网络对精度极其不敏感<sup id="fnref:2"><a href="#fn:2" class="footnote">2</a></sup>，因此通过使用双字节的浮点类型降低内存占用并提升吞吐量可以数倍的提升运算速度<sup id="fnref:3"><a href="#fn:3" class="footnote">3</a></sup>。不过只有在 CUDA 中（THC 中），才有 <code class="highlighter-rouge">FP16</code> （<code class="highlighter-rouge">float</code> 的一半）的类型支持。</p>
+
+<p>FP16 本身无关主题，就不再展开了。</p>
+
+<h2 id="the-tensor">The tensor</h2>
+
+<p>我不会一一解释每行代码做了什么，大体上来说都是显而易见的。</p>
+
+<p><code class="highlighter-rouge">generic/THStorage.h</code> 没什么太多好说的。</p>
+
+<p>我只把 <code class="highlighter-rouge">generic/THTensor.h</code> 大致注释一下，没有什么值得特别讨论的，大家过一下代码就好了。</p>
+
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="cp">#ifndef TH_GENERIC_FILE
+#define TH_GENERIC_FILE "generic/THTensor.h"
+#else
+</span>
+<span class="cm">/* a la lua? dim, storageoffset, ...  et les methodes ? */</span>
+
+<span class="cp">#define TH_TENSOR_REFCOUNTED 1
+</span>
+<span class="k">typedef</span> <span class="k">struct</span> <span class="n">THTensor</span>
+<span class="p">{</span>
+    <span class="c1">// Size of each dimension
+</span>    <span class="kt">int64_t</span> <span class="o">*</span><span class="n">size</span><span class="p">;</span>
+    <span class="c1">// Stride of each dimension. Read the article mentioned above about numpy if you don't understand what it is for.
+</span>    <span class="kt">int64_t</span> <span class="o">*</span><span class="n">stride</span><span class="p">;</span>
+    <span class="c1">// Dimension of tensor, e.g., for matrix, it's 2
+</span>    <span class="kt">int</span> <span class="n">nDimension</span><span class="p">;</span>
+
+    <span class="c1">// Note: storage-&gt;size may be greater than the recorded size
+</span>    <span class="c1">// of a tensor
+</span>    <span class="n">THStorage</span> <span class="o">*</span><span class="n">storage</span><span class="p">;</span>
+    <span class="kt">ptrdiff_t</span> <span class="n">storageOffset</span><span class="p">;</span>
+    <span class="kt">int</span> <span class="n">refcount</span><span class="p">;</span>
+
+    <span class="kt">char</span> <span class="n">flag</span><span class="p">;</span>
+
+<span class="p">}</span> <span class="n">THTensor</span><span class="p">;</span>
+
+
+<span class="cm">/**** access methods ****/</span>
+<span class="n">TH_API</span> <span class="n">THStorage</span><span class="o">*</span> <span class="n">THTensor_</span><span class="p">(</span><span class="n">storage</span><span class="p">)(</span><span class="k">const</span> <span class="n">THTensor</span> <span class="o">*</span><span class="n">self</span><span class="p">);</span>
+<span class="n">TH_API</span> <span class="kt">ptrdiff_t</span> <span class="n">THTensor_</span><span class="p">(</span><span class="n">storageOffset</span><span class="p">)(</span><span class="k">const</span> <span class="n">THTensor</span> <span class="o">*</span><span class="n">self</span><span class="p">);</span>
+<span class="n">TH_API</span> <span class="kt">int</span> <span class="n">THTensor_</span><span class="p">(</span><span class="n">nDimension</span><span class="p">)(</span><span class="k">const</span> <span class="n">THTensor</span> <span class="o">*</span><span class="n">self</span><span class="p">);</span>
+<span class="n">TH_API</span> <span class="kt">int64_t</span> <span class="n">THTensor_</span><span class="p">(</span><span class="n">size</span><span class="p">)(</span><span class="k">const</span> <span class="n">THTensor</span> <span class="o">*</span><span class="n">self</span><span class="p">,</span> <span class="kt">int</span> <span class="n">dim</span><span class="p">);</span>
+<span class="n">TH_API</span> <span class="kt">int64_t</span> <span class="n">THTensor_</span><span class="p">(</span><span class="n">stride</span><span class="p">)(</span><span class="k">const</span> <span class="n">THTensor</span> <span class="o">*</span><span class="n">self</span><span class="p">,</span> <span class="kt">int</span> <span class="n">dim</span><span class="p">);</span>
+<span class="c1">// Return a storage with the size of the current tensor as data. Notice `Long` is `int64_t`.
+</span><span class="n">TH_API</span> <span class="n">THLongStorage</span> <span class="o">*</span><span class="n">THTensor_</span><span class="p">(</span><span class="n">newSizeOf</span><span class="p">)(</span><span class="n">THTensor</span> <span class="o">*</span><span class="n">self</span><span class="p">);</span>
+<span class="c1">// Return a storage with the stripe of the current tensor as data.
+</span><span class="n">TH_API</span> <span class="n">THLongStorage</span> <span class="o">*</span><span class="n">THTensor_</span><span class="p">(</span><span class="n">newStrideOf</span><span class="p">)(</span><span class="n">THTensor</span> <span class="o">*</span><span class="n">self</span><span class="p">);</span>
+<span class="n">TH_API</span> <span class="n">real</span> <span class="o">*</span><span class="n">THTensor_</span><span class="p">(</span><span class="n">data</span><span class="p">)(</span><span class="k">const</span> <span class="n">THTensor</span> <span class="o">*</span><span class="n">self</span><span class="p">);</span>
+
+<span class="n">TH_API</span> <span class="kt">void</span> <span class="n">THTensor_</span><span class="p">(</span><span class="n">setFlag</span><span class="p">)(</span><span class="n">THTensor</span> <span class="o">*</span><span class="n">self</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="n">flag</span><span class="p">);</span>
+<span class="n">TH_API</span> <span class="kt">void</span> <span class="n">THTensor_</span><span class="p">(</span><span class="n">clearFlag</span><span class="p">)(</span><span class="n">THTensor</span> <span class="o">*</span><span class="n">self</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="n">flag</span><span class="p">);</span>
+
+
+<span class="cm">/**** creation methods ****/</span>
+<span class="c1">// New empty tensor.
+</span><span class="n">TH_API</span> <span class="n">THTensor</span> <span class="o">*</span><span class="n">THTensor_</span><span class="p">(</span><span class="k">new</span><span class="p">)(</span><span class="kt">void</span><span class="p">);</span>
+<span class="c1">// Tensor pointing to the same storage with same view.
+</span><span class="n">TH_API</span> <span class="n">THTensor</span> <span class="o">*</span><span class="n">THTensor_</span><span class="p">(</span><span class="n">newWithTensor</span><span class="p">)(</span><span class="n">THTensor</span> <span class="o">*</span><span class="n">tensor</span><span class="p">);</span>
+
+<span class="cm">/* stride might be NULL */</span>
+<span class="c1">// If `stride` is null, it will be inferred.
+// Create a new tensor pointing to the given storage, see `THTensor_(setStorageNd)`.
+</span><span class="n">TH_API</span> <span class="n">THTensor</span> <span class="o">*</span><span class="n">THTensor_</span><span class="p">(</span><span class="n">newWithStorage</span><span class="p">)(</span><span class="n">THStorage</span> <span class="o">*</span><span class="n">storage_</span><span class="p">,</span> <span class="kt">ptrdiff_t</span> <span class="n">storageOffset_</span><span class="p">,</span> <span class="n">THLongStorage</span> <span class="o">*</span><span class="n">size_</span><span class="p">,</span> <span class="n">THLongStorage</span> <span class="o">*</span><span class="n">stride_</span><span class="p">);</span>
+
+<span class="c1">// Some shorthand methods.
+</span><span class="n">TH_API</span> <span class="n">THTensor</span> <span class="o">*</span><span class="n">THTensor_</span><span class="p">(</span><span class="n">newWithStorage1d</span><span class="p">)(</span><span class="n">THStorage</span> <span class="o">*</span><span class="n">storage_</span><span class="p">,</span> <span class="kt">ptrdiff_t</span> <span class="n">storageOffset_</span><span class="p">,</span>
+                                <span class="kt">int64_t</span> <span class="n">size0_</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">stride0_</span><span class="p">);</span>
+<span class="n">TH_API</span> <span class="n">THTensor</span> <span class="o">*</span><span class="n">THTensor_</span><span class="p">(</span><span class="n">newWithStorage2d</span><span class="p">)(</span><span class="n">THStorage</span> <span class="o">*</span><span class="n">storage_</span><span class="p">,</span> <span class="kt">ptrdiff_t</span> <span class="n">storageOffset_</span><span class="p">,</span>
+                                <span class="kt">int64_t</span> <span class="n">size0_</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">stride0_</span><span class="p">,</span>
+                                <span class="kt">int64_t</span> <span class="n">size1_</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">stride1_</span><span class="p">);</span>
+<span class="n">TH_API</span> <span class="n">THTensor</span> <span class="o">*</span><span class="n">THTensor_</span><span class="p">(</span><span class="n">newWithStorage3d</span><span class="p">)(</span><span class="n">THStorage</span> <span class="o">*</span><span class="n">storage_</span><span class="p">,</span> <span class="kt">ptrdiff_t</span> <span class="n">storageOffset_</span><span class="p">,</span>
+                                <span class="kt">int64_t</span> <span class="n">size0_</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">stride0_</span><span class="p">,</span>
+                                <span class="kt">int64_t</span> <span class="n">size1_</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">stride1_</span><span class="p">,</span>
+                                <span class="kt">int64_t</span> <span class="n">size2_</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">stride2_</span><span class="p">);</span>
+<span class="n">TH_API</span> <span class="n">THTensor</span> <span class="o">*</span><span class="n">THTensor_</span><span class="p">(</span><span class="n">newWithStorage4d</span><span class="p">)(</span><span class="n">THStorage</span> <span class="o">*</span><span class="n">storage_</span><span class="p">,</span> <span class="kt">ptrdiff_t</span> <span class="n">storageOffset_</span><span class="p">,</span>
+                                <span class="kt">int64_t</span> <span class="n">size0_</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">stride0_</span><span class="p">,</span>
+                                <span class="kt">int64_t</span> <span class="n">size1_</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">stride1_</span><span class="p">,</span>
+                                <span class="kt">int64_t</span> <span class="n">size2_</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">stride2_</span><span class="p">,</span>
+                                <span class="kt">int64_t</span> <span class="n">size3_</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">stride3_</span><span class="p">);</span>
+
+<span class="cm">/* stride might be NULL */</span>
+<span class="n">TH_API</span> <span class="n">THTensor</span> <span class="o">*</span><span class="n">THTensor_</span><span class="p">(</span><span class="n">newWithSize</span><span class="p">)(</span><span class="n">THLongStorage</span> <span class="o">*</span><span class="n">size_</span><span class="p">,</span> <span class="n">THLongStorage</span> <span class="o">*</span><span class="n">stride_</span><span class="p">);</span>
+<span class="n">TH_API</span> <span class="n">THTensor</span> <span class="o">*</span><span class="n">THTensor_</span><span class="p">(</span><span class="n">newWithSize1d</span><span class="p">)(</span><span class="kt">int64_t</span> <span class="n">size0_</span><span class="p">);</span>
+<span class="n">TH_API</span> <span class="n">THTensor</span> <span class="o">*</span><span class="n">THTensor_</span><span class="p">(</span><span class="n">newWithSize2d</span><span class="p">)(</span><span class="kt">int64_t</span> <span class="n">size0_</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">size1_</span><span class="p">);</span>
+<span class="n">TH_API</span> <span class="n">THTensor</span> <span class="o">*</span><span class="n">THTensor_</span><span class="p">(</span><span class="n">newWithSize3d</span><span class="p">)(</span><span class="kt">int64_t</span> <span class="n">size0_</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">size1_</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">size2_</span><span class="p">);</span>
+<span class="n">TH_API</span> <span class="n">THTensor</span> <span class="o">*</span><span class="n">THTensor_</span><span class="p">(</span><span class="n">newWithSize4d</span><span class="p">)(</span><span class="kt">int64_t</span> <span class="n">size0_</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">size1_</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">size2_</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">size3_</span><span class="p">);</span>
+
+<span class="c1">// Copy tensor.
+</span><span class="n">TH_API</span> <span class="n">THTensor</span> <span class="o">*</span><span class="n">THTensor_</span><span class="p">(</span><span class="n">newClone</span><span class="p">)(</span><span class="n">THTensor</span> <span class="o">*</span><span class="n">self</span><span class="p">);</span>
+
+<span class="c1">// Return a contiguous tensor, create a new one if necessary, see `THTensor_(isContiguous)`.
+</span><span class="n">TH_API</span> <span class="n">THTensor</span> <span class="o">*</span><span class="n">THTensor_</span><span class="p">(</span><span class="n">newContiguous</span><span class="p">)(</span><span class="n">THTensor</span> <span class="o">*</span><span class="n">tensor</span><span class="p">);</span>
+
+<span class="c1">// See THTensor_(select).
+</span><span class="n">TH_API</span> <span class="n">THTensor</span> <span class="o">*</span><span class="n">THTensor_</span><span class="p">(</span><span class="n">newSelect</span><span class="p">)(</span><span class="n">THTensor</span> <span class="o">*</span><span class="n">tensor</span><span class="p">,</span> <span class="kt">int</span> <span class="n">dimension_</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">sliceIndex_</span><span class="p">);</span>
+
+<span class="c1">// See THTensor_(narrow).
+</span><span class="n">TH_API</span> <span class="n">THTensor</span> <span class="o">*</span><span class="n">THTensor_</span><span class="p">(</span><span class="n">newNarrow</span><span class="p">)(</span><span class="n">THTensor</span> <span class="o">*</span><span class="n">tensor</span><span class="p">,</span> <span class="kt">int</span> <span class="n">dimension_</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">firstIndex_</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">size_</span><span class="p">);</span>
+
+<span class="n">TH_API</span> <span class="n">THTensor</span> <span class="o">*</span><span class="n">THTensor_</span><span class="p">(</span><span class="n">newTranspose</span><span class="p">)(</span><span class="n">THTensor</span> <span class="o">*</span><span class="n">tensor</span><span class="p">,</span> <span class="kt">int</span> <span class="n">dimension1_</span><span class="p">,</span> <span class="kt">int</span> <span class="n">dimension2_</span><span class="p">);</span>
+
+<span class="c1">// See THTensor_(unfold).
+</span><span class="n">TH_API</span> <span class="n">THTensor</span> <span class="o">*</span><span class="n">THTensor_</span><span class="p">(</span><span class="n">newUnfold</span><span class="p">)(</span><span class="n">THTensor</span> <span class="o">*</span><span class="n">tensor</span><span class="p">,</span> <span class="kt">int</span> <span class="n">dimension_</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">size_</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">step_</span><span class="p">);</span>
+
+<span class="c1">// Tensor with a different view of the same storage. This is a little tricky if the `stride` is not trivial.
+</span><span class="n">TH_API</span> <span class="n">THTensor</span> <span class="o">*</span><span class="n">THTensor_</span><span class="p">(</span><span class="n">newView</span><span class="p">)(</span><span class="n">THTensor</span> <span class="o">*</span><span class="n">tensor</span><span class="p">,</span> <span class="n">THLongStorage</span> <span class="o">*</span><span class="n">size</span><span class="p">);</span>
+
+<span class="c1">// See `THTensor_(expand)`.
+</span><span class="n">TH_API</span> <span class="n">THTensor</span> <span class="o">*</span><span class="n">THTensor_</span><span class="p">(</span><span class="n">newExpand</span><span class="p">)(</span><span class="n">THTensor</span> <span class="o">*</span><span class="n">tensor</span><span class="p">,</span> <span class="n">THLongStorage</span> <span class="o">*</span><span class="n">size</span><span class="p">);</span>
+
+<span class="c1">// Think of repeat the tensor without reallocate the memory. Keep in mind the stride can be 0. 
+// This is very important and widely used as `broadcast` in tensor manipulation.
+</span><span class="n">TH_API</span> <span class="kt">void</span> <span class="n">THTensor_</span><span class="p">(</span><span class="n">expand</span><span class="p">)(</span><span class="n">THTensor</span> <span class="o">*</span><span class="n">r</span><span class="p">,</span> <span class="n">THTensor</span> <span class="o">*</span><span class="n">tensor</span><span class="p">,</span> <span class="n">THLongStorage</span> <span class="o">*</span><span class="n">size</span><span class="p">);</span>
+<span class="c1">// Seems like trying to coerce several tensor broadcasted into the same shape. But I can't find a usage.
+</span><span class="n">TH_API</span> <span class="kt">void</span> <span class="n">THTensor_</span><span class="p">(</span><span class="n">expandNd</span><span class="p">)(</span><span class="n">THTensor</span> <span class="o">**</span><span class="n">rets</span><span class="p">,</span> <span class="n">THTensor</span> <span class="o">**</span><span class="n">ops</span><span class="p">,</span> <span class="kt">int</span> <span class="n">count</span><span class="p">);</span>
+
+<span class="n">TH_API</span> <span class="kt">void</span> <span class="n">THTensor_</span><span class="p">(</span><span class="n">resize</span><span class="p">)(</span><span class="n">THTensor</span> <span class="o">*</span><span class="n">tensor</span><span class="p">,</span> <span class="n">THLongStorage</span> <span class="o">*</span><span class="n">size</span><span class="p">,</span> <span class="n">THLongStorage</span> <span class="o">*</span><span class="n">stride</span><span class="p">);</span>
+<span class="n">TH_API</span> <span class="kt">void</span> <span class="n">THTensor_</span><span class="p">(</span><span class="n">resizeAs</span><span class="p">)(</span><span class="n">THTensor</span> <span class="o">*</span><span class="n">tensor</span><span class="p">,</span> <span class="n">THTensor</span> <span class="o">*</span><span class="n">src</span><span class="p">);</span>
+
+<span class="c1">// Resize the tensor, resize the storage if necessary.
+</span><span class="n">TH_API</span> <span class="kt">void</span> <span class="n">THTensor_</span><span class="p">(</span><span class="n">resizeNd</span><span class="p">)(</span><span class="n">THTensor</span> <span class="o">*</span><span class="n">tensor</span><span class="p">,</span> <span class="kt">int</span> <span class="n">nDimension</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="o">*</span><span class="n">size</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="o">*</span><span class="n">stride</span><span class="p">);</span>
+<span class="n">TH_API</span> <span class="kt">void</span> <span class="n">THTensor_</span><span class="p">(</span><span class="n">resize1d</span><span class="p">)(</span><span class="n">THTensor</span> <span class="o">*</span><span class="n">tensor</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">size0_</span><span class="p">);</span>
+<span class="n">TH_API</span> <span class="kt">void</span> <span class="n">THTensor_</span><span class="p">(</span><span class="n">resize2d</span><span class="p">)(</span><span class="n">THTensor</span> <span class="o">*</span><span class="n">tensor</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">size0_</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">size1_</span><span class="p">);</span>
+<span class="n">TH_API</span> <span class="kt">void</span> <span class="n">THTensor_</span><span class="p">(</span><span class="n">resize3d</span><span class="p">)(</span><span class="n">THTensor</span> <span class="o">*</span><span class="n">tensor</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">size0_</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">size1_</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">size2_</span><span class="p">);</span>
+<span class="n">TH_API</span> <span class="kt">void</span> <span class="n">THTensor_</span><span class="p">(</span><span class="n">resize4d</span><span class="p">)(</span><span class="n">THTensor</span> <span class="o">*</span><span class="n">tensor</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">size0_</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">size1_</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">size2_</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">size3_</span><span class="p">);</span>
+<span class="n">TH_API</span> <span class="kt">void</span> <span class="n">THTensor_</span><span class="p">(</span><span class="n">resize5d</span><span class="p">)(</span><span class="n">THTensor</span> <span class="o">*</span><span class="n">tensor</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">size0_</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">size1_</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">size2_</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">size3_</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">size4_</span><span class="p">);</span>
+
+<span class="c1">// Just `=`, sharing storage.
+</span><span class="n">TH_API</span> <span class="kt">void</span> <span class="n">THTensor_</span><span class="p">(</span><span class="n">set</span><span class="p">)(</span><span class="n">THTensor</span> <span class="o">*</span><span class="n">self</span><span class="p">,</span> <span class="n">THTensor</span> <span class="o">*</span><span class="n">src</span><span class="p">);</span>
+
+<span class="n">TH_API</span> <span class="kt">void</span> <span class="n">THTensor_</span><span class="p">(</span><span class="n">setStorage</span><span class="p">)(</span><span class="n">THTensor</span> <span class="o">*</span><span class="n">self</span><span class="p">,</span> <span class="n">THStorage</span> <span class="o">*</span><span class="n">storage_</span><span class="p">,</span> <span class="kt">ptrdiff_t</span> <span class="n">storageOffset_</span><span class="p">,</span> <span class="n">THLongStorage</span> <span class="o">*</span><span class="n">size_</span><span class="p">,</span> <span class="n">THLongStorage</span> <span class="o">*</span><span class="n">stride_</span><span class="p">);</span>
+
+<span class="c1">// Change the internal storage, resize accordingly. Resize the storage if necessary. See `THTensor_(resizeNd)`.
+</span><span class="n">TH_API</span> <span class="kt">void</span> <span class="n">THTensor_</span><span class="p">(</span><span class="n">setStorageNd</span><span class="p">)(</span><span class="n">THTensor</span> <span class="o">*</span><span class="n">self</span><span class="p">,</span> <span class="n">THStorage</span> <span class="o">*</span><span class="n">storage_</span><span class="p">,</span> <span class="kt">ptrdiff_t</span> <span class="n">storageOffset_</span><span class="p">,</span> <span class="kt">int</span> <span class="n">nDimension</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="o">*</span><span class="n">size</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="o">*</span><span class="n">stride</span><span class="p">);</span>
+
+<span class="n">TH_API</span> <span class="kt">void</span> <span class="n">THTensor_</span><span class="p">(</span><span class="n">setStorage1d</span><span class="p">)(</span><span class="n">THTensor</span> <span class="o">*</span><span class="n">self</span><span class="p">,</span> <span class="n">THStorage</span> <span class="o">*</span><span class="n">storage_</span><span class="p">,</span> <span class="kt">ptrdiff_t</span> <span class="n">storageOffset_</span><span class="p">,</span>
+                                    <span class="kt">int64_t</span> <span class="n">size0_</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">stride0_</span><span class="p">);</span>
+<span class="n">TH_API</span> <span class="kt">void</span> <span class="n">THTensor_</span><span class="p">(</span><span class="n">setStorage2d</span><span class="p">)(</span><span class="n">THTensor</span> <span class="o">*</span><span class="n">self</span><span class="p">,</span> <span class="n">THStorage</span> <span class="o">*</span><span class="n">storage_</span><span class="p">,</span> <span class="kt">ptrdiff_t</span> <span class="n">storageOffset_</span><span class="p">,</span>
+                                    <span class="kt">int64_t</span> <span class="n">size0_</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">stride0_</span><span class="p">,</span>
+                                    <span class="kt">int64_t</span> <span class="n">size1_</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">stride1_</span><span class="p">);</span>
+<span class="n">TH_API</span> <span class="kt">void</span> <span class="n">THTensor_</span><span class="p">(</span><span class="n">setStorage3d</span><span class="p">)(</span><span class="n">THTensor</span> <span class="o">*</span><span class="n">self</span><span class="p">,</span> <span class="n">THStorage</span> <span class="o">*</span><span class="n">storage_</span><span class="p">,</span> <span class="kt">ptrdiff_t</span> <span class="n">storageOffset_</span><span class="p">,</span>
+                                    <span class="kt">int64_t</span> <span class="n">size0_</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">stride0_</span><span class="p">,</span>
+                                    <span class="kt">int64_t</span> <span class="n">size1_</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">stride1_</span><span class="p">,</span>
+                                    <span class="kt">int64_t</span> <span class="n">size2_</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">stride2_</span><span class="p">);</span>
+<span class="n">TH_API</span> <span class="kt">void</span> <span class="n">THTensor_</span><span class="p">(</span><span class="n">setStorage4d</span><span class="p">)(</span><span class="n">THTensor</span> <span class="o">*</span><span class="n">self</span><span class="p">,</span> <span class="n">THStorage</span> <span class="o">*</span><span class="n">storage_</span><span class="p">,</span> <span class="kt">ptrdiff_t</span> <span class="n">storageOffset_</span><span class="p">,</span>
+                                    <span class="kt">int64_t</span> <span class="n">size0_</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">stride0_</span><span class="p">,</span>
+                                    <span class="kt">int64_t</span> <span class="n">size1_</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">stride1_</span><span class="p">,</span>
+                                    <span class="kt">int64_t</span> <span class="n">size2_</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">stride2_</span><span class="p">,</span>
+                                    <span class="kt">int64_t</span> <span class="n">size3_</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">stride3_</span><span class="p">);</span>
+
+<span class="c1">// New view with the selected dimension starting with `firstIndex_` with length `size_`. You'd better try to visualize the memory layout yourself to understand it.
+</span><span class="n">TH_API</span> <span class="kt">void</span> <span class="n">THTensor_</span><span class="p">(</span><span class="n">narrow</span><span class="p">)(</span><span class="n">THTensor</span> <span class="o">*</span><span class="n">self</span><span class="p">,</span> <span class="n">THTensor</span> <span class="o">*</span><span class="n">src</span><span class="p">,</span> <span class="kt">int</span> <span class="n">dimension_</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">firstIndex_</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">size_</span><span class="p">);</span>
+
+<span class="c1">// Select the data of index of the specified dimension.
+</span><span class="n">TH_API</span> <span class="kt">void</span> <span class="n">THTensor_</span><span class="p">(</span><span class="n">select</span><span class="p">)(</span><span class="n">THTensor</span> <span class="o">*</span><span class="n">self</span><span class="p">,</span> <span class="n">THTensor</span> <span class="o">*</span><span class="n">src</span><span class="p">,</span> <span class="kt">int</span> <span class="n">dimension_</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">sliceIndex_</span><span class="p">);</span>
+
+<span class="c1">// !!!!!!!!! See how powerful a view can be with only as simple as `size` and `stride`.
+</span><span class="n">TH_API</span> <span class="kt">void</span> <span class="n">THTensor_</span><span class="p">(</span><span class="n">transpose</span><span class="p">)(</span><span class="n">THTensor</span> <span class="o">*</span><span class="n">self</span><span class="p">,</span> <span class="n">THTensor</span> <span class="o">*</span><span class="n">src</span><span class="p">,</span> <span class="kt">int</span> <span class="n">dimension1_</span><span class="p">,</span> <span class="kt">int</span> <span class="n">dimension2_</span><span class="p">);</span>
+
+<span class="c1">// Though there is possible advanced usage, most of time it is used to split one dimension into two with no overlap. Notice there is no `fold`, guessed why?
+</span><span class="n">TH_API</span> <span class="kt">void</span> <span class="n">THTensor_</span><span class="p">(</span><span class="n">unfold</span><span class="p">)(</span><span class="n">THTensor</span> <span class="o">*</span><span class="n">self</span><span class="p">,</span> <span class="n">THTensor</span> <span class="o">*</span><span class="n">src</span><span class="p">,</span> <span class="kt">int</span> <span class="n">dimension_</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">size_</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">step_</span><span class="p">);</span>
+
+<span class="c1">// Remove singleton dimension.
+</span><span class="n">TH_API</span> <span class="kt">void</span> <span class="n">THTensor_</span><span class="p">(</span><span class="n">squeeze</span><span class="p">)(</span><span class="n">THTensor</span> <span class="o">*</span><span class="n">self</span><span class="p">,</span> <span class="n">THTensor</span> <span class="o">*</span><span class="n">src</span><span class="p">);</span>
+<span class="c1">// Remove specified dimension if it is singleton.
+</span><span class="n">TH_API</span> <span class="kt">void</span> <span class="n">THTensor_</span><span class="p">(</span><span class="n">squeeze1d</span><span class="p">)(</span><span class="n">THTensor</span> <span class="o">*</span><span class="n">self</span><span class="p">,</span> <span class="n">THTensor</span> <span class="o">*</span><span class="n">src</span><span class="p">,</span> <span class="kt">int</span> <span class="n">dimension_</span><span class="p">);</span>
+<span class="c1">// Add a singleton dimension.
+</span><span class="n">TH_API</span> <span class="kt">void</span> <span class="n">THTensor_</span><span class="p">(</span><span class="n">unsqueeze1d</span><span class="p">)(</span><span class="n">THTensor</span> <span class="o">*</span><span class="n">self</span><span class="p">,</span> <span class="n">THTensor</span> <span class="o">*</span><span class="n">src</span><span class="p">,</span> <span class="kt">int</span> <span class="n">dimension_</span><span class="p">);</span>
+
+<span class="c1">// If the current view is a contiguous (naive) view of the storage.
+</span><span class="n">TH_API</span> <span class="kt">int</span> <span class="n">THTensor_</span><span class="p">(</span><span class="n">isContiguous</span><span class="p">)(</span><span class="k">const</span> <span class="n">THTensor</span> <span class="o">*</span><span class="n">self</span><span class="p">);</span>
+
+<span class="n">TH_API</span> <span class="kt">int</span> <span class="n">THTensor_</span><span class="p">(</span><span class="n">isSameSizeAs</span><span class="p">)(</span><span class="k">const</span> <span class="n">THTensor</span> <span class="o">*</span><span class="n">self</span><span class="p">,</span> <span class="k">const</span> <span class="n">THTensor</span> <span class="o">*</span><span class="n">src</span><span class="p">);</span>
+
+<span class="c1">// If the two tensor is pointing to the same storage with same view. Think of `==`.
+</span><span class="n">TH_API</span> <span class="kt">int</span> <span class="n">THTensor_</span><span class="p">(</span><span class="n">isSetTo</span><span class="p">)(</span><span class="k">const</span> <span class="n">THTensor</span> <span class="o">*</span><span class="n">self</span><span class="p">,</span> <span class="k">const</span> <span class="n">THTensor</span> <span class="o">*</span><span class="n">src</span><span class="p">);</span>
+
+<span class="n">TH_API</span> <span class="kt">int</span> <span class="n">THTensor_</span><span class="p">(</span><span class="n">isSize</span><span class="p">)(</span><span class="k">const</span> <span class="n">THTensor</span> <span class="o">*</span><span class="n">self</span><span class="p">,</span> <span class="k">const</span> <span class="n">THLongStorage</span> <span class="o">*</span><span class="n">dims</span><span class="p">);</span>
+<span class="n">TH_API</span> <span class="kt">ptrdiff_t</span> <span class="n">THTensor_</span><span class="p">(</span><span class="n">nElement</span><span class="p">)(</span><span class="k">const</span> <span class="n">THTensor</span> <span class="o">*</span><span class="n">self</span><span class="p">);</span>
+
+<span class="n">TH_API</span> <span class="kt">void</span> <span class="n">THTensor_</span><span class="p">(</span><span class="n">retain</span><span class="p">)(</span><span class="n">THTensor</span> <span class="o">*</span><span class="n">self</span><span class="p">);</span>
+<span class="n">TH_API</span> <span class="kt">void</span> <span class="n">THTensor_</span><span class="p">(</span><span class="n">free</span><span class="p">)(</span><span class="n">THTensor</span> <span class="o">*</span><span class="n">self</span><span class="p">);</span>
+
+<span class="c1">// Think of `std::move`.
+</span><span class="n">TH_API</span> <span class="kt">void</span> <span class="n">THTensor_</span><span class="p">(</span><span class="n">freeCopyTo</span><span class="p">)(</span><span class="n">THTensor</span> <span class="o">*</span><span class="n">self</span><span class="p">,</span> <span class="n">THTensor</span> <span class="o">*</span><span class="n">dst</span><span class="p">);</span>
+
+<span class="cm">/* Slow access methods [check everything] */</span>
+<span class="n">TH_API</span> <span class="kt">void</span> <span class="n">THTensor_</span><span class="p">(</span><span class="n">set1d</span><span class="p">)(</span><span class="n">THTensor</span> <span class="o">*</span><span class="n">tensor</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">x0</span><span class="p">,</span> <span class="n">real</span> <span class="n">value</span><span class="p">);</span>
+<span class="n">TH_API</span> <span class="kt">void</span> <span class="n">THTensor_</span><span class="p">(</span><span class="n">set2d</span><span class="p">)(</span><span class="n">THTensor</span> <span class="o">*</span><span class="n">tensor</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">x0</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">x1</span><span class="p">,</span> <span class="n">real</span> <span class="n">value</span><span class="p">);</span>
+<span class="n">TH_API</span> <span class="kt">void</span> <span class="n">THTensor_</span><span class="p">(</span><span class="n">set3d</span><span class="p">)(</span><span class="n">THTensor</span> <span class="o">*</span><span class="n">tensor</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">x0</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">x1</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">x2</span><span class="p">,</span> <span class="n">real</span> <span class="n">value</span><span class="p">);</span>
+<span class="n">TH_API</span> <span class="kt">void</span> <span class="n">THTensor_</span><span class="p">(</span><span class="n">set4d</span><span class="p">)(</span><span class="n">THTensor</span> <span class="o">*</span><span class="n">tensor</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">x0</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">x1</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">x2</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">x3</span><span class="p">,</span> <span class="n">real</span> <span class="n">value</span><span class="p">);</span>
+
+<span class="n">TH_API</span> <span class="n">real</span> <span class="n">THTensor_</span><span class="p">(</span><span class="n">get1d</span><span class="p">)(</span><span class="k">const</span> <span class="n">THTensor</span> <span class="o">*</span><span class="n">tensor</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">x0</span><span class="p">);</span>
+<span class="n">TH_API</span> <span class="n">real</span> <span class="n">THTensor_</span><span class="p">(</span><span class="n">get2d</span><span class="p">)(</span><span class="k">const</span> <span class="n">THTensor</span> <span class="o">*</span><span class="n">tensor</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">x0</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">x1</span><span class="p">);</span>
+<span class="n">TH_API</span> <span class="n">real</span> <span class="n">THTensor_</span><span class="p">(</span><span class="n">get3d</span><span class="p">)(</span><span class="k">const</span> <span class="n">THTensor</span> <span class="o">*</span><span class="n">tensor</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">x0</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">x1</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">x2</span><span class="p">);</span>
+<span class="n">TH_API</span> <span class="n">real</span> <span class="n">THTensor_</span><span class="p">(</span><span class="n">get4d</span><span class="p">)(</span><span class="k">const</span> <span class="n">THTensor</span> <span class="o">*</span><span class="n">tensor</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">x0</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">x1</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">x2</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">x3</span><span class="p">);</span>
+
+<span class="cm">/* Debug methods */</span>
+<span class="n">TH_API</span> <span class="n">THDescBuff</span> <span class="n">THTensor_</span><span class="p">(</span><span class="n">desc</span><span class="p">)(</span><span class="k">const</span> <span class="n">THTensor</span> <span class="o">*</span><span class="n">tensor</span><span class="p">);</span>
+<span class="n">TH_API</span> <span class="n">THDescBuff</span> <span class="n">THTensor_</span><span class="p">(</span><span class="n">sizeDesc</span><span class="p">)(</span><span class="k">const</span> <span class="n">THTensor</span> <span class="o">*</span><span class="n">tensor</span><span class="p">);</span>
+
+<span class="cp">#endif
+</span>
+</code></pre></div></div>
+
+<h2 id="i-want-gpu">I want GPU!</h2>
+
+<p>本来准备这篇写完的，但是太长了。</p>
+
+<p>下一篇，我们继续分析 THC。</p>
+
+<div class="footnotes">
+  <ol>
+    <li id="fn:1">
+      <p>https://www.labri.fr/perso/nrougier/from-python-to-numpy/ <a href="#fnref:1" class="reversefootnote">&#8617;</a></p>
+    </li>
+    <li id="fn:2">
+      <p>https://petewarden.com/2015/05/23/why-are-eight-bits-enough-for-deep-neural-networks/ <a href="#fnref:2" class="reversefootnote">&#8617;</a></p>
+    </li>
+    <li id="fn:3">
+      <p>https://devblogs.nvidia.com/mixed-precision-programming-cuda-8/ <a href="#fnref:3" class="reversefootnote">&#8617;</a></p>
+    </li>
+  </ol>
+</div>
+
+</article>
+
+
+
+
+
+
+  <div id="disqus_thread"></div>
+  <script type="text/javascript">
+    var disqus_shortname  = 'zhuhaow';
+    var disqus_identifier = '/machine/learning/pytorch/2018/02/11/a-random-walk-in-pytorch-3';
+    var disqus_title      = "A random walk in PyTorch (3) -- My Precious!";
+
+    (function() {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+  </script>
+  <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+
+
+
+
+
+      </div>
+    </div>
+  </div>
+
+  <footer class="center">
+  <div class="measure">
+    <small>
+      Theme crafted with &lt;3 by <a href="http://johnotander.com">John Otander</a> (<a href="https://twitter.com/4lpine">@4lpine</a>).<br>
+      &lt;/&gt; available on <a href="https://github.com/johnotander/pixyll">GitHub</a>.
+    </small>
+  </div>
+</footer>
+
+
+</body>
+</html>

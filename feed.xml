@@ -1,0 +1,1300 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Samples</title>
+    <description>Just some random thoughts.</description>
+    <link>https://blog.zhuhaow.me/</link>
+    <atom:link href="https://blog.zhuhaow.me/feed.xml" rel="self" type="application/rss+xml" />
+    
+      <item>
+        <title>A random walk in PyTorch (3) -- My Precious!</title>
+        <description>&lt;p&gt;好，开篇又是老问题，&lt;code class=&quot;highlighter-rouge&quot;&gt;aten/src&lt;/code&gt; 下面的文件那么多，怎么读呢？&lt;/p&gt;
+
+&lt;p&gt;我强烈建议你先自己试试，理清&lt;code class=&quot;highlighter-rouge&quot;&gt;aten&lt;/code&gt;下面的代码结构。&lt;/p&gt;
+
+&lt;p&gt;从难到易：&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;不看 readme 行不行？&lt;/li&gt;
+  &lt;li&gt;不看 &lt;code class=&quot;highlighter-rouge&quot;&gt;doc&lt;/code&gt; 行不行。&lt;/li&gt;
+  &lt;li&gt;不行就再看一下 &lt;code class=&quot;highlighter-rouge&quot;&gt;doc&lt;/code&gt; 吧。&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;好，那么我们开始。&lt;/p&gt;
+
+&lt;h2 id=&quot;hello-aten&quot;&gt;Hello, ATen&lt;/h2&gt;
+
+&lt;p&gt;注意到 ATen 是用 CMake 编译的，我们先看看 &lt;code class=&quot;highlighter-rouge&quot;&gt;CMakeLists.txt&lt;/code&gt;。&lt;/p&gt;
+
+&lt;p&gt;不懂 CMake 不要紧，反正不要你写。&lt;/p&gt;
+
+&lt;p&gt;我们来看一下，设置一些基本参数；设置编译的 flag；找了一些依赖库，注意一下（可选或必须）依赖库有 CUDA，OpenMP，MAGMA，BLAS，LAPACK；检查了 CPU 的指令集；还检测了一些编译器的 bug （feature）。大多数都只是细节，无需关心。依赖库需要用到，我们需要了解一下它们的用途，我就不展开了。&lt;/p&gt;
+
+&lt;p&gt;接下来就开始处理 ATen 了，可以看到：&lt;/p&gt;
+
+&lt;div class=&quot;language-cmake highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nb&quot;&gt;add_definitions&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;-DTH_INDEX_BASE=0&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;nb&quot;&gt;set&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;TH_LINK_STYLE STATIC&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;nb&quot;&gt;add_subdirectory&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;src/TH&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;nb&quot;&gt;include_directories&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+  &lt;span class=&quot;c1&quot;&gt;# dense&lt;/span&gt;
+  &lt;span class=&quot;si&quot;&gt;${&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;CMAKE_CURRENT_SOURCE_DIR&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;}&lt;/span&gt;/src/TH
+  &lt;span class=&quot;si&quot;&gt;${&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;CMAKE_CURRENT_SOURCE_DIR&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;}&lt;/span&gt;/src/THC
+  &lt;span class=&quot;si&quot;&gt;${&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;CMAKE_CURRENT_BINARY_DIR&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;}&lt;/span&gt;/src/TH
+  &lt;span class=&quot;si&quot;&gt;${&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;CMAKE_CURRENT_BINARY_DIR&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;}&lt;/span&gt;/src/THC
+  &lt;span class=&quot;c1&quot;&gt;# sparse&lt;/span&gt;
+  &lt;span class=&quot;si&quot;&gt;${&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;CMAKE_CURRENT_SOURCE_DIR&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;}&lt;/span&gt;/src/THS
+  &lt;span class=&quot;si&quot;&gt;${&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;CMAKE_CURRENT_SOURCE_DIR&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;}&lt;/span&gt;/src/THCS
+  &lt;span class=&quot;si&quot;&gt;${&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;CMAKE_CURRENT_BINARY_DIR&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;}&lt;/span&gt;/src/THS
+  &lt;span class=&quot;si&quot;&gt;${&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;CMAKE_CURRENT_BINARY_DIR&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;}&lt;/span&gt;/src/THCS
+
+  &lt;span class=&quot;si&quot;&gt;${&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;CMAKE_CURRENT_SOURCE_DIR&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;}&lt;/span&gt;/src
+  &lt;span class=&quot;si&quot;&gt;${&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;CMAKE_CURRENT_BINARY_DIR&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;}&lt;/span&gt;/src&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;nb&quot;&gt;add_subdirectory&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;src/THNN&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;nb&quot;&gt;add_subdirectory&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;src/THS&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+
+&lt;span class=&quot;nb&quot;&gt;if&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;NO_CUDA&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+  &lt;span class=&quot;nb&quot;&gt;message&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;disabling CUDA because NO_CUDA is set&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+  &lt;span class=&quot;nf&quot;&gt;SET&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;CUDA_FLAG -n&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+  &lt;span class=&quot;nf&quot;&gt;SET&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;AT_CUDA_ENABLED 0&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;nb&quot;&gt;else&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+  &lt;span class=&quot;nf&quot;&gt;SET&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;AT_CUDA_ENABLED 1&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+  &lt;span class=&quot;nf&quot;&gt;INCLUDE_DIRECTORIES&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;${&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;CUDA_INCLUDE_DIRS&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+  &lt;span class=&quot;nb&quot;&gt;find_package&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;CUDA 5.5 REQUIRED&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+  &lt;span class=&quot;nb&quot;&gt;add_subdirectory&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;src/THC&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+  &lt;span class=&quot;nb&quot;&gt;add_subdirectory&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;src/THCUNN&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+  &lt;span class=&quot;nb&quot;&gt;add_subdirectory&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;src/THCS&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;nb&quot;&gt;endif&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;我们可以看到，这里添加了 &lt;code class=&quot;highlighter-rouge&quot;&gt;src/TH&lt;/code&gt;，&lt;code class=&quot;highlighter-rouge&quot;&gt;src/THNN&lt;/code&gt;，&lt;code class=&quot;highlighter-rouge&quot;&gt;src/THS&lt;/code&gt;三个子文件夹。并且，根据有没有 CUDA，又进一步添加了 &lt;code class=&quot;highlighter-rouge&quot;&gt;src/THC&lt;/code&gt;，&lt;code class=&quot;highlighter-rouge&quot;&gt;src/THCUNN&lt;/code&gt;，&lt;code class=&quot;highlighter-rouge&quot;&gt;src/THCS&lt;/code&gt;。这就非常清楚了：有三组 varations，第一个是普通的 dense tensor，第二个是 sparse tensor （注释里都告诉你了），第三个明显和神经网络有关，做什么的还不知道，同时每一个 tensor 还有一个对应的 GPU 版本。&lt;/p&gt;
+
+&lt;p&gt;加下来添加了依赖 CuDNN 和 NNPACK。&lt;/p&gt;
+
+&lt;p&gt;注意到：&lt;/p&gt;
+
+&lt;div class=&quot;language-cmake highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nb&quot;&gt;set&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;cwrap_files
+  &lt;span class=&quot;si&quot;&gt;${&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;CMAKE_CURRENT_SOURCE_DIR&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;}&lt;/span&gt;/src/ATen/Declarations.cwrap
+  &lt;span class=&quot;si&quot;&gt;${&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;CMAKE_CURRENT_SOURCE_DIR&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;}&lt;/span&gt;/src/THNN/generic/THNN.h
+  &lt;span class=&quot;si&quot;&gt;${&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;CMAKE_CURRENT_SOURCE_DIR&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;}&lt;/span&gt;/src/THCUNN/generic/THCUNN.h
+  &lt;span class=&quot;si&quot;&gt;${&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;CMAKE_CURRENT_SOURCE_DIR&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;}&lt;/span&gt;/src/ATen/nn.yaml
+  &lt;span class=&quot;si&quot;&gt;${&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;CMAKE_CURRENT_SOURCE_DIR&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;}&lt;/span&gt;/src/ATen/native/native_functions.yaml
+&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;添加了几个文件，这些文件显然很特殊，我们需要注意。&lt;/p&gt;
+
+&lt;p&gt;最后又添加了&lt;code class=&quot;highlighter-rouge&quot;&gt;src/ATen&lt;/code&gt;，test 可以忽略。contrib 就不用管了，我们主要是看核心部分。&lt;/p&gt;
+
+&lt;p&gt;OK，那么 &lt;code class=&quot;highlighter-rouge&quot;&gt;src/ATen&lt;/code&gt; 是干什么的呢？其实从添加这些子文件夹的顺序和文件夹的名字就应该猜的出来 &lt;code class=&quot;highlighter-rouge&quot;&gt;src/ATen&lt;/code&gt; 就是这六个 tensor 的具体实现的文件夹的接口。不过你们可能要验证一下，所以我们继续看。&lt;/p&gt;
+
+&lt;p&gt;在 &lt;code class=&quot;highlighter-rouge&quot;&gt;src/ATen&lt;/code&gt; 下搜索 &lt;code class=&quot;highlighter-rouge&quot;&gt;TH.h&lt;/code&gt;，可以看到在 &lt;code class=&quot;highlighter-rouge&quot;&gt;gen.py&lt;/code&gt; 中有引用，这也就意味着在生成 ATen 的某些文件的时候需要用到 &lt;code class=&quot;highlighter-rouge&quot;&gt;TH.h&lt;/code&gt;，可见 ATen 封装了 TH。 Q.E.D.&lt;/p&gt;
+
+&lt;p&gt;好吧，说实话，我开始也不是这么找的。而是：&lt;/p&gt;
+
+&lt;p&gt;在 &lt;code class=&quot;highlighter-rouge&quot;&gt;src/ATen&lt;/code&gt; 中，可以看到 &lt;code class=&quot;highlighter-rouge&quot;&gt;ATen.h&lt;/code&gt;：&lt;/p&gt;
+
+&lt;div class=&quot;language-c highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;cp&quot;&gt;#pragma once
+&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#include &quot;ATen/ATenGeneral.h&quot;
+#include &quot;ATen/Allocator.h&quot;
+#include &quot;ATen/Scalar.h&quot;
+#include &quot;ATen/Type.h&quot;
+#include &quot;ATen/Generator.h&quot;
+#include &quot;ATen/Context.h&quot;
+#include &quot;ATen/Storage.h&quot;
+#include &quot;ATen/Tensor.h&quot;
+#include &quot;ATen/TensorGeometry.h&quot;
+#include &quot;ATen/Functions.h&quot;
+#include &quot;ATen/Formatting.h&quot;
+#include &quot;ATen/TensorOperators.h&quot;
+#include &quot;ATen/TensorMethods.h&quot;
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;注意到这里有两个文件可能有重要内容，&lt;code class=&quot;highlighter-rouge&quot;&gt;ATen/ATenGeneral.h&lt;/code&gt; 和 &lt;code class=&quot;highlighter-rouge&quot;&gt;ATen/Tensor.h&lt;/code&gt;，前一个什么也没有，后一个并不存在。不存在只有一个可能，这个 header 是生成的。&lt;/p&gt;
+
+&lt;p&gt;我们打开 &lt;code class=&quot;highlighter-rouge&quot;&gt;Aten/CMakeLists.txt&lt;/code&gt;，搜索 &lt;code class=&quot;highlighter-rouge&quot;&gt;Tensor&lt;/code&gt; 是搜不到任何东西的，这就意味着，这个文件是批量生成的，我们又看到 &lt;code class=&quot;highlighter-rouge&quot;&gt;ATen&lt;/code&gt; 下面有 &lt;code class=&quot;highlighter-rouge&quot;&gt;templates&lt;/code&gt; 文件夹，而其中刚好有 &lt;code class=&quot;highlighter-rouge&quot;&gt;Tensor.h&lt;/code&gt;。&lt;/p&gt;
+
+&lt;p&gt;但是，我们找不到任何引用 &lt;code class=&quot;highlighter-rouge&quot;&gt;TH.h&lt;/code&gt; 的地方，这不合理，所以需要搜索一下，就可以找到之前的 &lt;code class=&quot;highlighter-rouge&quot;&gt;gen.py&lt;/code&gt; 了。弄明白 &lt;code class=&quot;highlighter-rouge&quot;&gt;gen.py&lt;/code&gt; 很麻烦，因为我们并不知道究竟这些生成的文件的目的和逻辑是什么（虽然并不难猜）。最重要的是，我们已经有了生成的结果，&lt;code class=&quot;highlighter-rouge&quot;&gt;doc/Tensor.h&lt;/code&gt; 了。&lt;/p&gt;
+
+&lt;p&gt;通过 &lt;code class=&quot;highlighter-rouge&quot;&gt;doc/Tensor.h&lt;/code&gt; 可以看到：&lt;/p&gt;
+
+&lt;div class=&quot;language-cpp highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Tensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;detail&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;::&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;TensorBase&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+
+&lt;span class=&quot;p&quot;&gt;...&lt;/span&gt;
+
+&lt;span class=&quot;kr&quot;&gt;inline&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Tensor&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;toType&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Type&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;amp;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;t&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;const&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;kr&quot;&gt;inline&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Tensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;amp;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;copy_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Tensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;amp;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;src&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;kr&quot;&gt;inline&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Tensor&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;toType&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ScalarType&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;t&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;const&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;kr&quot;&gt;inline&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Tensor&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;toBackend&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Backend&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;b&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;const&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+&lt;span class=&quot;p&quot;&gt;...&lt;/span&gt;
+
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;Tensor&lt;/code&gt; 是一个 tensor 的封装，这个 tensor 可能是各种不同的数值类型，也可以在内存或是显存中。换言之，&lt;code class=&quot;highlighter-rouge&quot;&gt;Tensor&lt;/code&gt; 包装了 TH，THC（sparse 和 dense 在任何库中都是不可能隐式转换的），通过统一的函数调用完成了不同数据类型和不同架构上的运算。&lt;/p&gt;
+
+&lt;h2 id=&quot;follow-the-numpy&quot;&gt;Follow the Numpy&lt;/h2&gt;
+
+&lt;p&gt;在继续之前，我建议所有没有（正确）使用过 numpy 或者 Matlab 或者 R 的同学读一下关于 numpy 的一些基本原理（不是教程），这里推荐 From Python to Numpy &lt;sup id=&quot;fnref:1&quot;&gt;&lt;a href=&quot;#fn:1&quot; class=&quot;footnote&quot;&gt;1&lt;/a&gt;&lt;/sup&gt;，不过大家也可以读自己喜欢的。网上这类文章应该不少，写的都比我好，所以我接下来就不会再重复了。&lt;/p&gt;
+
+&lt;p&gt;本质上，除了 &lt;code class=&quot;highlighter-rouge&quot;&gt;Tensor&lt;/code&gt; 支持 GPU，&lt;code class=&quot;highlighter-rouge&quot;&gt;Tensor&lt;/code&gt; 和 numpy 中的 &lt;code class=&quot;highlighter-rouge&quot;&gt;ndarray&lt;/code&gt; 要做的事基本一致。所以如果你理解 numpy 的基本原理，那么 TH 想要做的事情是显而易见的。&lt;/p&gt;
+
+&lt;h2 id=&quot;dry&quot;&gt;DRY&lt;/h2&gt;
+
+&lt;p&gt;现在读读 &lt;code class=&quot;highlighter-rouge&quot;&gt;src/TH/THStorage.h&lt;/code&gt;。我估计很多人已经晕了。&lt;/p&gt;
+
+&lt;div class=&quot;language-cpp highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;cp&quot;&gt;#define THStorage        TH_CONCAT_3(TH,Real,Storage)
+#define THStorage_(NAME) TH_CONCAT_4(TH,Real,Storage_,NAME)
+&lt;/span&gt;
+&lt;span class=&quot;cm&quot;&gt;/* fast access methods */&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#define TH_STORAGE_GET(storage, idx) ((storage)-&amp;gt;data[(idx)])
+#define TH_STORAGE_SET(storage, idx, value) ((storage)-&amp;gt;data[(idx)] = (value))
+&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#include &quot;generic/THStorage.h&quot;
+#include &quot;THGenerateAllTypes.h&quot;
+&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#include &quot;generic/THStorage.h&quot;
+#include &quot;THGenerateHalfType.h&quot;
+&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#include &quot;generic/THStorageCopy.h&quot;
+#include &quot;THGenerateAllTypes.h&quot;
+&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#include &quot;generic/THStorageCopy.h&quot;
+#include &quot;THGenerateHalfType.h&quot;
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;我们先看 &lt;code class=&quot;highlighter-rouge&quot;&gt;generic/THStorage.h&lt;/code&gt;：&lt;/p&gt;
+
+&lt;div class=&quot;language-cpp highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;typedef&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THStorage&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;real&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;data&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;kt&quot;&gt;ptrdiff_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;size&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;refcount&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;kt&quot;&gt;char&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;flag&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;THAllocator&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;allocator&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;allocatorContext&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THStorage&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;view&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THStorage&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;我觉得 &lt;code class=&quot;highlighter-rouge&quot;&gt;real&lt;/code&gt; 这个 macro 的名字起的实在很令人误解，但是我们可以看到它就是那一堆 &lt;code class=&quot;highlighter-rouge&quot;&gt;THGenerate*Type.h&lt;/code&gt; 里面定义的各种数值类型。所以不难看出，这里的 &lt;code class=&quot;highlighter-rouge&quot;&gt;THStorage&lt;/code&gt; 其实就是代表了一块内存，&lt;code class=&quot;highlighter-rouge&quot;&gt;data&lt;/code&gt; 就是内存地址，&lt;code class=&quot;highlighter-rouge&quot;&gt;size&lt;/code&gt; 是数组大小，&lt;code class=&quot;highlighter-rouge&quot;&gt;refcount&lt;/code&gt; 标记了引用数（这样我们就可以在多个 &lt;code class=&quot;highlighter-rouge&quot;&gt;Tensor&lt;/code&gt; 间共享同一块数据了。You should see that coming, right?），&lt;code class=&quot;highlighter-rouge&quot;&gt;flag&lt;/code&gt; 标记了内存的一些特性（注意到这些 flag 就定义在这个 struct 定义的上面了么），&lt;code class=&quot;highlighter-rouge&quot;&gt;allocator&lt;/code&gt; 和 &lt;code class=&quot;highlighter-rouge&quot;&gt;allocatorContext&lt;/code&gt; 告诉我们这块内存是怎么来的，以及它将要怎么没的。&lt;/p&gt;
+
+&lt;p&gt;那么 &lt;code class=&quot;highlighter-rouge&quot;&gt;view&lt;/code&gt; 是什么呢？稍微搜索一下代码就可以在 &lt;code class=&quot;highlighter-rouge&quot;&gt;torch/csrc/generic&lt;/code&gt; 发现它是用来代表 &lt;code class=&quot;highlighter-rouge&quot;&gt;data&lt;/code&gt; 并不指向 allocator 返回的内存块开头的时候用来指向最原始的数据块的。这个 field 加入的比较晚，可见它并不是核心功能（我还不知道它是解决什么的）。&lt;/p&gt;
+
+&lt;div class=&quot;language-cpp highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;static&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;PyObject&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;THPStorage_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;newTHView&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THStorage&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;base&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ptrdiff_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;offset&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;size_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;size&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+  &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;data&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;char&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;base&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;data&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;offset&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;THStoragePtr&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;view&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THStorage_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;newWithData&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;LIBRARY_STATE&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;real&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;data&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;size&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;));&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;view&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;flag&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;TH_STORAGE_REFCOUNTED&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;|&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;TH_STORAGE_VIEW&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;view&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;view&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;base&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;       &lt;span class=&quot;o&quot;&gt;&amp;lt;----------&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;here&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;!&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;THStorage_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;retain&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;LIBRARY_STATE&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;base&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THPStorage_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;New&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;view&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;release&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;());&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;明白了 &lt;code class=&quot;highlighter-rouge&quot;&gt;src/TH/generic/THStorage.h&lt;/code&gt; 的内容就明白了这个文件的目的。在基本的运算中，我们需要支持 &lt;code class=&quot;highlighter-rouge&quot;&gt;float&lt;/code&gt;，&lt;code class=&quot;highlighter-rouge&quot;&gt;double&lt;/code&gt;，&lt;code class=&quot;highlighter-rouge&quot;&gt;int&lt;/code&gt; 等各种数据类型，而这些类型的的逻辑都是完全一样的。很自然的，我们会想到使用 template，但是 PyTorch 并不想使用 template，可能的原因有很多，我并不是开发者，就不乱猜了。既然不使用 template，那么我们就需要生成这些只有类型不同的代码，这就是&lt;/p&gt;
+
+&lt;div class=&quot;language-cpp highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;cp&quot;&gt;#include &quot;generic/THStorage.h&quot;
+#include &quot;THGenerateAllTypes.h&quot;
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;的作用。&lt;/p&gt;
+
+&lt;p&gt;明白了这一点，我们再看看这些代码是如何生成的。&lt;/p&gt;
+
+&lt;p&gt;在讲代码如何生成之前，我先大致讲一下宏生成代码常用的一个技巧。因为这个其实是 C 和 C++ 的问题，和 PyTorch 实在没什么关系，我不展开了。&lt;/p&gt;
+
+&lt;div class=&quot;language-c highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;
+&lt;span class=&quot;cp&quot;&gt;#define TH_CONCAT_3(x,y,z) TH_CONCAT_3_EXPAND(x,y,z)
+#define TH_CONCAT_3_EXPAND(x,y,z) x ## y ## z
+&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#define TH_CONCAT_4_EXPAND(x,y,z,w) x ## y ## z ## w
+#define TH_CONCAT_4(x,y,z,w) TH_CONCAT_4_EXPAND(x,y,z,w)
+&lt;/span&gt;
+
+&lt;span class=&quot;cp&quot;&gt;#define THStorage        TH_CONCAT_3(TH,Real,Storage)
+#define THStorage_(NAME) TH_CONCAT_4(TH,Real,Storage_,NAME)
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;这里的 &lt;code class=&quot;highlighter-rouge&quot;&gt;TH_CONCAT_3&lt;/code&gt; 是干什么的？这里其实就是把 &lt;code class=&quot;highlighter-rouge&quot;&gt;TH&lt;/code&gt;，&lt;code class=&quot;highlighter-rouge&quot;&gt;Real&lt;/code&gt;，&lt;code class=&quot;highlighter-rouge&quot;&gt;Storage&lt;/code&gt; 这三个字符拼起来，并展开其中的宏。至于为什么要绕到 &lt;code class=&quot;highlighter-rouge&quot;&gt;TH_CONCAT_3_EXPAND&lt;/code&gt; 去，大家可以看一下
+https://gcc.gnu.org/onlinedocs/cpp/Argument-Prescan.html#Argument-Prescan ，核心在于 concat(##) 的时候 token 不展开，所以要先展开再 concat。&lt;/p&gt;
+
+&lt;p&gt;以 &lt;code class=&quot;highlighter-rouge&quot;&gt;double&lt;/code&gt; 为例：&lt;/p&gt;
+
+&lt;div class=&quot;language-cpp highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;cp&quot;&gt;#define real double
+#define Real Double
+&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;real&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THStorage_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;data&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THStorage&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;c1&quot;&gt;// is equivalent to 
+&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;double&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THDoubleStorage_data&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THDoubleStorage&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;接下来我们想的就是把同样的定义用不同的类型都生成一遍，最直观的想法我们会这么做呢？大概是这样&lt;/p&gt;
+
+&lt;div class=&quot;language-cpp highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;// The umbrella header for all type
+&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#define real double
+#define Real Double
+#include &quot;generic/some_header.h&quot;
+#undef real
+#undef Real
+&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#define real int
+#define Real Int
+#include &quot;generic/some_header.h&quot;
+#undef real
+#undef Real
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;实际中，需要定义的宏可能不止两个，我们最终可能需要写成&lt;/p&gt;
+
+&lt;div class=&quot;language-cpp highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;// The umbrella header for all types
+&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#include &quot;def_for_double.h&quot;
+#include &quot;generic/some_header.h&quot;
+#include &quot;undef.h&quot;
+&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#include &quot;def_for_int.h&quot;
+#include &quot;generic/some_header.h&quot;
+#include &quot;undef.h&quot;
+&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;这样的形式，相当繁琐。如果我们要增加新的类型，就意味着要修改所有的生成代码。&lt;/p&gt;
+
+&lt;p&gt;当然，考虑到实际上可能永远都不会有新的类型，所以这样除了重复多了一些以外没也有什么缺点。&lt;/p&gt;
+
+&lt;p&gt;如果想要减少重复，显然，我们需要将需要生成的模版文件作为“参数”，而不是把类型作为“参数”。&lt;/p&gt;
+
+&lt;p&gt;这也就是&lt;/p&gt;
+
+&lt;div class=&quot;language-cpp highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;cp&quot;&gt;#include &quot;generic/THStorage.h&quot;
+#include &quot;THGenerateAllTypes.h&quot;
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;的目的。先导入需要生成的文件，然后在 &lt;code class=&quot;highlighter-rouge&quot;&gt;THGenerateAllTypes.h&lt;/code&gt; 中生成所有的类型。&lt;/p&gt;
+
+&lt;p&gt;看一下 &lt;code class=&quot;highlighter-rouge&quot;&gt;generic/THStorage.h&lt;/code&gt;，&lt;/p&gt;
+
+&lt;div class=&quot;language-cpp highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;cp&quot;&gt;#ifndef TH_GENERIC_FILE
+#define TH_GENERIC_FILE &quot;generic/THStorage.h&quot;
+#else
+&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;...&lt;/span&gt;
+
+&lt;span class=&quot;cp&quot;&gt;#define TH_STORAGE_REFCOUNTED 1
+#define TH_STORAGE_RESIZABLE  2
+#define TH_STORAGE_FREEMEM    4
+#define TH_STORAGE_VIEW       8
+&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;typedef&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THStorage&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;real&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;data&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;kt&quot;&gt;ptrdiff_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;size&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;refcount&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;kt&quot;&gt;char&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;flag&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;THAllocator&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;allocator&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;allocatorContext&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THStorage&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;view&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THStorage&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+&lt;span class=&quot;cp&quot;&gt;#endif
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;在第一次导入的时候 &lt;code class=&quot;highlighter-rouge&quot;&gt;TH_GENERIC_FILE&lt;/code&gt; 还没有定义，因此只是定义了 &lt;code class=&quot;highlighter-rouge&quot;&gt;TH_GENERIC_FILE&lt;/code&gt; 为自己的路径。&lt;/p&gt;
+
+&lt;p&gt;具体的某个类型，比如 &lt;code class=&quot;highlighter-rouge&quot;&gt;float&lt;/code&gt;，可以用对应的头文件导入，比如 &lt;code class=&quot;highlighter-rouge&quot;&gt;THGenerateFloatType.h&lt;/code&gt;&lt;/p&gt;
+
+&lt;div class=&quot;language-cpp highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;cp&quot;&gt;#ifndef TH_GENERIC_FILE
+#error &quot;You must define TH_GENERIC_FILE before including THGenerateFloatType.h&quot;
+#endif
+&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#define real float
+#define accreal double
+#define TH_CONVERT_REAL_TO_ACCREAL(_val) (accreal)(_val)
+#define TH_CONVERT_ACCREAL_TO_REAL(_val) (real)(_val)
+#define Real Float
+#define THInf FLT_MAX
+#define TH_REAL_IS_FLOAT
+#line 1 TH_GENERIC_FILE
+#include TH_GENERIC_FILE    --------- This is the template header
+#undef accreal
+#undef real
+#undef Real
+#undef THInf
+#undef TH_REAL_IS_FLOAT
+#undef TH_CONVERT_REAL_TO_ACCREAL
+#undef TH_CONVERT_ACCREAL_TO_REAL
+&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#ifndef THGenerateManyTypes
+#undef TH_GENERIC_FILE
+#endif
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;当然，我们还希望可以一次导入所有类型的定义（&lt;code class=&quot;highlighter-rouge&quot;&gt;THGenerateAllTypes.h&lt;/code&gt;）。&lt;/p&gt;
+
+&lt;p&gt;为了简单起见，这里我用 &lt;code class=&quot;highlighter-rouge&quot;&gt;THGenerateFloatTypes.h&lt;/code&gt; 解释一下这里的做法。在 &lt;code class=&quot;highlighter-rouge&quot;&gt;THGenerateFloatTypes.h&lt;/code&gt; 中&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;#ifndef TH_GENERIC_FILE
+#error &quot;You must define TH_GENERIC_FILE before including THGenerateFloatTypes.h&quot;
+#endif
+
+#ifndef THGenerateManyTypes
+#define THFloatLocalGenerateManyTypes
+#define THGenerateManyTypes
+#endif
+
+#include &quot;THGenerateFloatType.h&quot;
+#include &quot;THGenerateDoubleType.h&quot;
+
+#ifdef THFloatLocalGenerateManyTypes
+#undef THFloatLocalGenerateManyTypes
+#undef THGenerateManyTypes
+#undef TH_GENERIC_FILE
+#endif
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;我们看到，通过使用 &lt;code class=&quot;highlighter-rouge&quot;&gt;THGenerateManyTypes&lt;/code&gt; 保证 &lt;code class=&quot;highlighter-rouge&quot;&gt;TH_GENERIC_FILE&lt;/code&gt; 不会在具体类型的定义结束之后被 &lt;code class=&quot;highlighter-rouge&quot;&gt;undef&lt;/code&gt; 掉，这样我们可以用一个文件生成多个类型的定义。&lt;/p&gt;
+
+&lt;p&gt;如果你觉得这个代码很难懂的话，这很正常，因为这里有更加清楚简单的写法。&lt;/p&gt;
+
+&lt;div class=&quot;language-cpp highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;cp&quot;&gt;## in THStorage.h
+&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#define TH_CURRNET_GENERIC_FILE &quot;generic/THStorage.h&quot;
+#include &quot;THGenerateAllType.h&quot;
+#undef TH_CURRNET_GENERIC_FILE
+&lt;/span&gt;
+
+&lt;span class=&quot;cp&quot;&gt;## in THGenerateAllType.h
+&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#include &quot;THGenerateFloatTypes.h&quot;
+#include &quot;THGenerateIntTypes.h&quot;
+&lt;/span&gt;
+
+&lt;span class=&quot;cp&quot;&gt;## in THGenerateFloatTypes.h
+&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#include &quot;THGenerateFloatType.h&quot;
+#include &quot;THGenerateDoubleType.h&quot;
+&lt;/span&gt;
+
+&lt;span class=&quot;cp&quot;&gt;## in THGenerateFloatType.h
+&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#ifndef TH_CURRNET_GENERIC_FILE
+#error &quot;You must define TH_GENERIC_FILE before including THGenerateFloatType.h&quot;
+#endif
+&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#define real float
+#define accreal double
+#define TH_CONVERT_REAL_TO_ACCREAL(_val) (accreal)(_val)
+#define TH_CONVERT_ACCREAL_TO_REAL(_val) (real)(_val)
+#define Real Float
+#define THInf FLT_MAX
+#define TH_REAL_IS_FLOAT
+#line 1 TH_CURRNET_GENERIC_FILE
+#include TH_CURRNET_GENERIC_FILE
+#undef accreal
+#undef real
+#undef Real
+#undef THInf
+#undef TH_REAL_IS_FLOAT
+#undef TH_CONVERT_REAL_TO_ACCREAL
+#undef TH_CONVERT_ACCREAL_TO_REAL
+&lt;/span&gt;
+
+&lt;span class=&quot;cp&quot;&gt;## in generic/THStorage.h
+&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;## Just the template code
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;THStorage.h&lt;/code&gt; 中的&lt;/p&gt;
+
+&lt;div class=&quot;language-cpp highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;cp&quot;&gt;#include &quot;generic/THStorage.h&quot;
+#include &quot;THGenerateAllTypes.h&quot;
+&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#include &quot;generic/THStorage.h&quot;
+#include &quot;THGenerateHalfType.h&quot;
+&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#include &quot;generic/THStorageCopy.h&quot;
+#include &quot;THGenerateAllTypes.h&quot;
+&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#include &quot;generic/THStorageCopy.h&quot;
+#include &quot;THGenerateHalfType.h&quot;
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;可以转换为：&lt;/p&gt;
+
+&lt;div class=&quot;language-cpp highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;cp&quot;&gt;#define TH_CURRNET_GENERIC_FILE &quot;generic/THStorage.h&quot;
+#include &quot;THGenerateAllType.h&quot;
+#include &quot;THGenerateHalfType.h&quot;
+#undef TH_CURRNET_GENERIC_FILE
+&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#define TH_CURRNET_GENERIC_FILE &quot;generic/THStorageCopy.h&quot;
+#include &quot;THGenerateAllType.h&quot;
+#include &quot;THGenerateHalfType.h&quot;
+#undef TH_CURRNET_GENERIC_FILE
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;可以看到，不需要种种判断 define/undef，只需要把 generic header 作为“参数”就可以了。所以不是特别理解为什么 PyTorch 会写成这么麻烦的形式，唯一能想到的好处是怕大家忘了 undef &lt;code class=&quot;highlighter-rouge&quot;&gt;TH_CURRNET_GENERIC_FILE&lt;/code&gt;？而且很容易令人迷惑，因为很少见到同一个头文件被直接连续 include 多次的。&lt;/p&gt;
+
+&lt;h2 id=&quot;half-type&quot;&gt;Half type&lt;/h2&gt;
+
+&lt;p&gt;因为我们这里用的是 TH 作为例子，所以 half 看起来似乎就是普通的 &lt;code class=&quot;highlighter-rouge&quot;&gt;float&lt;/code&gt;，没有任何意义。&lt;/p&gt;
+
+&lt;p&gt;神经网络对精度极其不敏感&lt;sup id=&quot;fnref:2&quot;&gt;&lt;a href=&quot;#fn:2&quot; class=&quot;footnote&quot;&gt;2&lt;/a&gt;&lt;/sup&gt;，因此通过使用双字节的浮点类型降低内存占用并提升吞吐量可以数倍的提升运算速度&lt;sup id=&quot;fnref:3&quot;&gt;&lt;a href=&quot;#fn:3&quot; class=&quot;footnote&quot;&gt;3&lt;/a&gt;&lt;/sup&gt;。不过只有在 CUDA 中（THC 中），才有 &lt;code class=&quot;highlighter-rouge&quot;&gt;FP16&lt;/code&gt; （&lt;code class=&quot;highlighter-rouge&quot;&gt;float&lt;/code&gt; 的一半）的类型支持。&lt;/p&gt;
+
+&lt;p&gt;FP16 本身无关主题，就不再展开了。&lt;/p&gt;
+
+&lt;h2 id=&quot;the-tensor&quot;&gt;The tensor&lt;/h2&gt;
+
+&lt;p&gt;我不会一一解释每行代码做了什么，大体上来说都是显而易见的。&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;generic/THStorage.h&lt;/code&gt; 没什么太多好说的。&lt;/p&gt;
+
+&lt;p&gt;我只把 &lt;code class=&quot;highlighter-rouge&quot;&gt;generic/THTensor.h&lt;/code&gt; 大致注释一下，没有什么值得特别讨论的，大家过一下代码就好了。&lt;/p&gt;
+
+&lt;div class=&quot;language-cpp highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;
+&lt;span class=&quot;cp&quot;&gt;#ifndef TH_GENERIC_FILE
+#define TH_GENERIC_FILE &quot;generic/THTensor.h&quot;
+#else
+&lt;/span&gt;
+&lt;span class=&quot;cm&quot;&gt;/* a la lua? dim, storageoffset, ...  et les methodes ? */&lt;/span&gt;
+
+&lt;span class=&quot;cp&quot;&gt;#define TH_TENSOR_REFCOUNTED 1
+&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;typedef&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;c1&quot;&gt;// Size of each dimension
+&lt;/span&gt;    &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;size&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;c1&quot;&gt;// Stride of each dimension. Read the article mentioned above about numpy if you don't understand what it is for.
+&lt;/span&gt;    &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;stride&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;c1&quot;&gt;// Dimension of tensor, e.g., for matrix, it's 2
+&lt;/span&gt;    &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;nDimension&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+    &lt;span class=&quot;c1&quot;&gt;// Note: storage-&amp;gt;size may be greater than the recorded size
+&lt;/span&gt;    &lt;span class=&quot;c1&quot;&gt;// of a tensor
+&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;THStorage&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;storage&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;kt&quot;&gt;ptrdiff_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;storageOffset&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;refcount&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+    &lt;span class=&quot;kt&quot;&gt;char&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;flag&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+
+&lt;span class=&quot;cm&quot;&gt;/**** access methods ****/&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THStorage&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;storage&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ptrdiff_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;storageOffset&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;nDimension&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;size&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dim&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;stride&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dim&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;c1&quot;&gt;// Return a storage with the size of the current tensor as data. Notice `Long` is `int64_t`.
+&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THLongStorage&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;newSizeOf&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;c1&quot;&gt;// Return a storage with the stripe of the current tensor as data.
+&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THLongStorage&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;newStrideOf&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;real&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;data&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;setFlag&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;char&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;flag&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;clearFlag&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;char&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;flag&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+
+&lt;span class=&quot;cm&quot;&gt;/**** creation methods ****/&lt;/span&gt;
+&lt;span class=&quot;c1&quot;&gt;// New empty tensor.
+&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;new&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;c1&quot;&gt;// Tensor pointing to the same storage with same view.
+&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;newWithTensor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tensor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+&lt;span class=&quot;cm&quot;&gt;/* stride might be NULL */&lt;/span&gt;
+&lt;span class=&quot;c1&quot;&gt;// If `stride` is null, it will be inferred.
+// Create a new tensor pointing to the given storage, see `THTensor_(setStorageNd)`.
+&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;newWithStorage&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THStorage&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;storage_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ptrdiff_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;storageOffset_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THLongStorage&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;size_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THLongStorage&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;stride_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+&lt;span class=&quot;c1&quot;&gt;// Some shorthand methods.
+&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;newWithStorage1d&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THStorage&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;storage_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ptrdiff_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;storageOffset_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+                                &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;size0_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;stride0_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;newWithStorage2d&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THStorage&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;storage_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ptrdiff_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;storageOffset_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+                                &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;size0_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;stride0_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+                                &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;size1_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;stride1_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;newWithStorage3d&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THStorage&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;storage_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ptrdiff_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;storageOffset_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+                                &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;size0_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;stride0_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+                                &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;size1_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;stride1_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+                                &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;size2_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;stride2_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;newWithStorage4d&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THStorage&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;storage_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ptrdiff_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;storageOffset_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+                                &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;size0_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;stride0_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+                                &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;size1_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;stride1_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+                                &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;size2_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;stride2_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+                                &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;size3_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;stride3_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+&lt;span class=&quot;cm&quot;&gt;/* stride might be NULL */&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;newWithSize&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THLongStorage&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;size_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THLongStorage&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;stride_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;newWithSize1d&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;size0_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;newWithSize2d&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;size0_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;size1_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;newWithSize3d&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;size0_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;size1_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;size2_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;newWithSize4d&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;size0_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;size1_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;size2_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;size3_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+&lt;span class=&quot;c1&quot;&gt;// Copy tensor.
+&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;newClone&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+&lt;span class=&quot;c1&quot;&gt;// Return a contiguous tensor, create a new one if necessary, see `THTensor_(isContiguous)`.
+&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;newContiguous&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tensor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+&lt;span class=&quot;c1&quot;&gt;// See THTensor_(select).
+&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;newSelect&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tensor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dimension_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;sliceIndex_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+&lt;span class=&quot;c1&quot;&gt;// See THTensor_(narrow).
+&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;newNarrow&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tensor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dimension_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;firstIndex_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;size_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;newTranspose&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tensor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dimension1_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dimension2_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+&lt;span class=&quot;c1&quot;&gt;// See THTensor_(unfold).
+&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;newUnfold&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tensor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dimension_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;size_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;step_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+&lt;span class=&quot;c1&quot;&gt;// Tensor with a different view of the same storage. This is a little tricky if the `stride` is not trivial.
+&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;newView&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tensor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THLongStorage&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;size&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+&lt;span class=&quot;c1&quot;&gt;// See `THTensor_(expand)`.
+&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;newExpand&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tensor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THLongStorage&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;size&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+&lt;span class=&quot;c1&quot;&gt;// Think of repeat the tensor without reallocate the memory. Keep in mind the stride can be 0. 
+// This is very important and widely used as `broadcast` in tensor manipulation.
+&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;expand&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;r&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tensor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THLongStorage&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;size&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;c1&quot;&gt;// Seems like trying to coerce several tensor broadcasted into the same shape. But I can't find a usage.
+&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;expandNd&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;**&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rets&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;**&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ops&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;count&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;resize&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tensor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THLongStorage&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;size&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THLongStorage&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;stride&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;resizeAs&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tensor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;src&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+&lt;span class=&quot;c1&quot;&gt;// Resize the tensor, resize the storage if necessary.
+&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;resizeNd&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tensor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;nDimension&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;size&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;stride&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;resize1d&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tensor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;size0_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;resize2d&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tensor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;size0_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;size1_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;resize3d&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tensor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;size0_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;size1_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;size2_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;resize4d&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tensor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;size0_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;size1_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;size2_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;size3_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;resize5d&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tensor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;size0_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;size1_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;size2_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;size3_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;size4_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+&lt;span class=&quot;c1&quot;&gt;// Just `=`, sharing storage.
+&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;set&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;src&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;setStorage&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THStorage&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;storage_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ptrdiff_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;storageOffset_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THLongStorage&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;size_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THLongStorage&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;stride_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+&lt;span class=&quot;c1&quot;&gt;// Change the internal storage, resize accordingly. Resize the storage if necessary. See `THTensor_(resizeNd)`.
+&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;setStorageNd&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THStorage&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;storage_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ptrdiff_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;storageOffset_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;nDimension&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;size&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;stride&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;setStorage1d&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THStorage&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;storage_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ptrdiff_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;storageOffset_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+                                    &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;size0_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;stride0_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;setStorage2d&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THStorage&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;storage_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ptrdiff_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;storageOffset_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+                                    &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;size0_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;stride0_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+                                    &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;size1_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;stride1_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;setStorage3d&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THStorage&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;storage_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ptrdiff_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;storageOffset_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+                                    &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;size0_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;stride0_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+                                    &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;size1_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;stride1_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+                                    &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;size2_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;stride2_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;setStorage4d&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THStorage&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;storage_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ptrdiff_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;storageOffset_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+                                    &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;size0_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;stride0_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+                                    &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;size1_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;stride1_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+                                    &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;size2_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;stride2_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+                                    &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;size3_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;stride3_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+&lt;span class=&quot;c1&quot;&gt;// New view with the selected dimension starting with `firstIndex_` with length `size_`. You'd better try to visualize the memory layout yourself to understand it.
+&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;narrow&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;src&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dimension_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;firstIndex_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;size_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+&lt;span class=&quot;c1&quot;&gt;// Select the data of index of the specified dimension.
+&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;select&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;src&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dimension_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;sliceIndex_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+&lt;span class=&quot;c1&quot;&gt;// !!!!!!!!! See how powerful a view can be with only as simple as `size` and `stride`.
+&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;transpose&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;src&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dimension1_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dimension2_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+&lt;span class=&quot;c1&quot;&gt;// Though there is possible advanced usage, most of time it is used to split one dimension into two with no overlap. Notice there is no `fold`, guessed why?
+&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;unfold&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;src&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dimension_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;size_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;step_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+&lt;span class=&quot;c1&quot;&gt;// Remove singleton dimension.
+&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;squeeze&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;src&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;c1&quot;&gt;// Remove specified dimension if it is singleton.
+&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;squeeze1d&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;src&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dimension_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;c1&quot;&gt;// Add a singleton dimension.
+&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;unsqueeze1d&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;src&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dimension_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+&lt;span class=&quot;c1&quot;&gt;// If the current view is a contiguous (naive) view of the storage.
+&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;isContiguous&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;isSameSizeAs&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;src&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+&lt;span class=&quot;c1&quot;&gt;// If the two tensor is pointing to the same storage with same view. Think of `==`.
+&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;isSetTo&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;src&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;isSize&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THLongStorage&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;dims&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ptrdiff_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;nElement&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;retain&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;free&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+&lt;span class=&quot;c1&quot;&gt;// Think of `std::move`.
+&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;freeCopyTo&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;dst&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+&lt;span class=&quot;cm&quot;&gt;/* Slow access methods [check everything] */&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;set1d&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tensor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;real&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;value&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;set2d&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tensor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;real&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;value&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;set3d&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tensor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;real&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;value&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;set4d&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tensor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x3&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;real&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;value&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;real&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;get1d&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tensor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;real&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;get2d&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tensor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;real&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;get3d&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tensor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;real&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;get4d&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tensor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int64_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x3&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+&lt;span class=&quot;cm&quot;&gt;/* Debug methods */&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THDescBuff&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;desc&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tensor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;TH_API&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THDescBuff&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sizeDesc&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THTensor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tensor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+&lt;span class=&quot;cp&quot;&gt;#endif
+&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;i-want-gpu&quot;&gt;I want GPU!&lt;/h2&gt;
+
+&lt;p&gt;本来准备这篇写完的，但是太长了。&lt;/p&gt;
+
+&lt;p&gt;下一篇，我们继续分析 THC。&lt;/p&gt;
+
+&lt;div class=&quot;footnotes&quot;&gt;
+  &lt;ol&gt;
+    &lt;li id=&quot;fn:1&quot;&gt;
+      &lt;p&gt;https://www.labri.fr/perso/nrougier/from-python-to-numpy/ &lt;a href=&quot;#fnref:1&quot; class=&quot;reversefootnote&quot;&gt;&amp;#8617;&lt;/a&gt;&lt;/p&gt;
+    &lt;/li&gt;
+    &lt;li id=&quot;fn:2&quot;&gt;
+      &lt;p&gt;https://petewarden.com/2015/05/23/why-are-eight-bits-enough-for-deep-neural-networks/ &lt;a href=&quot;#fnref:2&quot; class=&quot;reversefootnote&quot;&gt;&amp;#8617;&lt;/a&gt;&lt;/p&gt;
+    &lt;/li&gt;
+    &lt;li id=&quot;fn:3&quot;&gt;
+      &lt;p&gt;https://devblogs.nvidia.com/mixed-precision-programming-cuda-8/ &lt;a href=&quot;#fnref:3&quot; class=&quot;reversefootnote&quot;&gt;&amp;#8617;&lt;/a&gt;&lt;/p&gt;
+    &lt;/li&gt;
+  &lt;/ol&gt;
+&lt;/div&gt;
+</description>
+        <pubDate>Sun, 11 Feb 2018 08:00:00 +0800</pubDate>
+        <link>https://blog.zhuhaow.me/machine/learning/pytorch/2018/02/11/a-random-walk-in-pytorch-3/</link>
+        <guid isPermaLink="true">https://blog.zhuhaow.me/machine/learning/pytorch/2018/02/11/a-random-walk-in-pytorch-3/</guid>
+      </item>
+    
+      <item>
+        <title>A random walk in PyTorch (2) -- Build the World</title>
+        <description>&lt;p&gt;按照我本来的计划，第二篇文章应该直接开始看 ATen 了，而且直奔 BLAS 而去。&lt;/p&gt;
+
+&lt;p&gt;不过从 NEKit 的经验中我发现，可能是因为大家对于一个新的库都要花不少的时间才能把握住其中的逻辑，所以都不愿意花太多的精力。个人意见，通读代码没什么特别大的必要，除非你要做二次开发。但是至少要掌握库本身的逻辑所在。一个简单的标准就是，如果我问你，XX 是在哪里做的，你至少应该能很快的找到具体的代码位置（虽然你不知道它的具体实现）。靠什么找到呢？靠的是你理解每个模块的功能，所以你自然知道要去找哪一个模块，你也自然明白你的每一行调用究竟做了什么，而不是复制黏贴 demo，再通过随机采样实现自己想要的功能。&lt;/p&gt;
+
+&lt;p&gt;我还不太确定，但我估计我之后的各章都只是简单的展开主要逻辑（太懒）。由于我非常可能会省略很多的中间过程，所以可能有的时候会有人会问，你怎么会找到、看到这些东西呢？比如说，为什么会先从 ATen 开始呢？很多事情，自己做很简单，看别人的就很难了。这也是为什么有些时候读书或者读代码很难的原因，你只能看到漫长累加的结果，而不是过程。可能每一个小迭代的逻辑过程都很简单，就好比数学考试的大题若是有五小问就比只有最后一问要容易很多一样，但是你知道自己的逻辑，却很难知道他人的逻辑。所以我想可以先分享一下我读代码的一些思路和逻辑，不成体系，正好借着了解 PyTorch 结构的这个例子来展开一下。&lt;/p&gt;
+
+&lt;p&gt;和第一篇一样，这将是一篇不涉及任何 PyTorch 具体技术细节的文章。可以直接跳过。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;之后所有内容都基于 commit dd5c195646b941d3e20a72847ac48c41e272b8b2。嗯，因为我拖了很久，其实 master 已经有了一些比较大的变化，比如 Caffe 的代码被合并进了 PyTorch（虽然我还没看到有什么实质的变化），但是整个框架的核心思想没有发生什么改变。另一方面，由于很多原因（比如太懒、太懒和太懒），我不想在花时间比较新的代码和之前的细微变化了，所以一切都已这个 commit 为准。我可能会在全部写完之后再写写一些大的变化（如果有的话）。&lt;/strong&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;oops-a-big-project&quot;&gt;Oops, a big project&lt;/h2&gt;
+
+&lt;p&gt;现在你面对着 PyTorch 的源代码：&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;-----------------------------------------------------------------------------------
+Language                         files          blank        comment           code
+-----------------------------------------------------------------------------------
+C++                                484          39495          16203         241502
+C/C++ Header                       610          12415          15851          83722
+Python                             483          19631          21796          64968
+C                                  208           6986           3058          40491
+CUDA                               315           7128           3859          39864
+Markdown                            76           8563              0          30437
+YAML                                15            507            199          26066
+CMake                               93           1404           2193           7029
+MSBuild script                      11              0              0           1711
+Protocol Buffers                    58            482            707           1612
+Fortran 90                          12            405            161           1528
+JSON                                10            131              0           1261
+make                                18            273            227            989
+Bourne Shell                        26            166            188            793
+m4                                   4             68             49            534
+CSS                                  3             69             16            284
+DOS Batch                            4             42              1            179
+Windows Resource File                1              3              0             34
+vim script                           2             14              7             34
+Dockerfile                           1              7              2             32
+Lua                                  1              5              0             28
+INI                                  2              0              0             19
+HTML                                 1              3              0             12
+-----------------------------------------------------------------------------------
+SUM:                              2438          97797          64517         543129
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;从何开始呢？&lt;/p&gt;
+
+&lt;p&gt;你对 PyTorch 的依赖组件一无所知，也不了解 PyTorch 代码的组织结构。就算能猜个大概，但怎么把 PyTorch 代码的组织逻辑找出来呢？最起码的，先读哪个文件夹下面的哪个文件？&lt;/p&gt;
+
+&lt;p&gt;第一步，也是最重要的，先读完 PyTorch 的文档。读完文档，就应当对一个库的基本功能有了清晰的概念，大体上也可以分析出库的代码有哪些模块所构成。&lt;/p&gt;
+
+&lt;p&gt;接下来，你可以看看这个库是怎么编译的（对于某些提供 Makefile 或是 m4 的库就要看情况了），来理解代码的构成（至少你也要能分清楚每个文件夹下面的代码是干什么的）。幸运的是（相对 TensorFlow），PyTorch 的根目录下就有 &lt;code class=&quot;highlighter-rouge&quot;&gt;setup.py&lt;/code&gt;，显然 PyTorch 的编译过程不会太难把握。&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;setup.py&lt;/code&gt; 文件的关键部分没有什么技术难度，即便你对 &lt;code class=&quot;highlighter-rouge&quot;&gt;distutils&lt;/code&gt; 和 &lt;code class=&quot;highlighter-rouge&quot;&gt;setuptools&lt;/code&gt; 不太了解应该也没啥问题。&lt;/p&gt;
+
+&lt;p&gt;我们主要看看 PyTorch 的编译步骤。&lt;/p&gt;
+
+&lt;h2 id=&quot;building-pytorch&quot;&gt;Building PyTorch&lt;/h2&gt;
+
+&lt;p&gt;Oops，&lt;code class=&quot;highlighter-rouge&quot;&gt;setup.py&lt;/code&gt; 有 743 行，要看一会儿了……吗？&lt;/p&gt;
+
+&lt;p&gt;其实不用，几分钟就看完了。记住你的目的不是学习 &lt;code class=&quot;highlighter-rouge&quot;&gt;setuptools&lt;/code&gt;，不要浪费时间，等你要用到的时候自然会弄明白的。&lt;/p&gt;
+
+&lt;p&gt;打开文件，先通览一遍，前面好多东西林林总总似乎都是编译的细节，但是在最后：&lt;/p&gt;
+
+&lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;__name__&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;'__main__'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;setup&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;name&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;torch&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;version&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;version&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+          &lt;span class=&quot;n&quot;&gt;description&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;Tensors and Dynamic neural networks in Python with strong GPU acceleration&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+          &lt;span class=&quot;n&quot;&gt;ext_modules&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;extensions&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+          &lt;span class=&quot;n&quot;&gt;cmdclass&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;cmdclass&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+          &lt;span class=&quot;n&quot;&gt;packages&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;packages&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+          &lt;span class=&quot;n&quot;&gt;package_data&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'torch'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;
+              &lt;span class=&quot;s&quot;&gt;'lib/*.so*'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;'lib/*.dylib*'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;'lib/*.dll'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;'lib/*.lib'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+              &lt;span class=&quot;s&quot;&gt;'lib/torch_shm_manager'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+              &lt;span class=&quot;s&quot;&gt;'lib/*.h'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+              &lt;span class=&quot;s&quot;&gt;'lib/include/TH/*.h'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;'lib/include/TH/generic/*.h'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+              &lt;span class=&quot;s&quot;&gt;'lib/include/THC/*.h'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;'lib/include/THC/generic/*.h'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+              &lt;span class=&quot;s&quot;&gt;'lib/include/ATen/*.h'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+          &lt;span class=&quot;p&quot;&gt;]},&lt;/span&gt;
+          &lt;span class=&quot;n&quot;&gt;install_requires&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'pyyaml'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;'numpy'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;],&lt;/span&gt;
+          &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;好的，我们找到入口了，看一下，&lt;code class=&quot;highlighter-rouge&quot;&gt;ext_modules=extensions&lt;/code&gt; 显然是要编译的模块，&lt;code class=&quot;highlighter-rouge&quot;&gt;cmdclass=cmdclass&lt;/code&gt; 似乎是可以提供一些命令，&lt;code class=&quot;highlighter-rouge&quot;&gt;packages=packages&lt;/code&gt; 显然是一些需要的包。&lt;/p&gt;
+
+&lt;p&gt;往上一扫，就在同一屏幕里就有：&lt;/p&gt;
+
+&lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;n&quot;&gt;cmdclass&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;s&quot;&gt;'build'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;build&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+    &lt;span class=&quot;s&quot;&gt;'build_py'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;build_py&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+    &lt;span class=&quot;s&quot;&gt;'build_ext'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;build_ext&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+    &lt;span class=&quot;s&quot;&gt;'build_deps'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;build_deps&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+    &lt;span class=&quot;s&quot;&gt;'build_module'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;build_module&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+    &lt;span class=&quot;s&quot;&gt;'develop'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;develop&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+    &lt;span class=&quot;s&quot;&gt;'install'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;install&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+    &lt;span class=&quot;s&quot;&gt;'clean'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;clean&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;大家 python 肯定写的比我多，&lt;code class=&quot;highlighter-rouge&quot;&gt;python setup.py install&lt;/code&gt; 大家肯定是见过的，那么我们可以看看这里 &lt;code class=&quot;highlighter-rouge&quot;&gt;install&lt;/code&gt; 是在干什么。&lt;/p&gt;
+
+&lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;install&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;setuptools&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;command&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;install&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;install&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
+
+    &lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;run&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;bp&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;not&lt;/span&gt; &lt;span class=&quot;bp&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;skip_build&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+            &lt;span class=&quot;bp&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;run_command&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'build_deps'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;setuptools&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;command&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;install&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;install&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;run&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;bp&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;嗯……默认实现外加运行 &lt;code class=&quot;highlighter-rouge&quot;&gt;build_deps&lt;/code&gt;。但是默认实现是什么呢？看起来有一点麻烦。&lt;/p&gt;
+
+&lt;p&gt;但是，默认实现还能干什么呢，还不就是 build 需要 build 的东西么？需要 build 的东西是什么呢，必然就在 &lt;code class=&quot;highlighter-rouge&quot;&gt;build*&lt;/code&gt; 命令里了。&lt;/p&gt;
+
+&lt;p&gt;我们看一下：一共五个 &lt;code class=&quot;highlighter-rouge&quot;&gt;build&lt;/code&gt;，&lt;code class=&quot;highlighter-rouge&quot;&gt;build_py&lt;/code&gt; 是默认实现估计干不了啥，&lt;code class=&quot;highlighter-rouge&quot;&gt;build_ext&lt;/code&gt; 显然是 build extensions，&lt;code class=&quot;highlighter-rouge&quot;&gt;build_module&lt;/code&gt; 调用了 &lt;code class=&quot;highlighter-rouge&quot;&gt;build_py&lt;/code&gt; 和 &lt;code class=&quot;highlighter-rouge&quot;&gt;build_ext&lt;/code&gt;，还有一个 &lt;code class=&quot;highlighter-rouge&quot;&gt;build_deps&lt;/code&gt;。&lt;/p&gt;
+
+&lt;p&gt;显然，我们只需要看看 &lt;code class=&quot;highlighter-rouge&quot;&gt;build_deps&lt;/code&gt; 如何处理了哪些依赖和 &lt;code class=&quot;highlighter-rouge&quot;&gt;build_ext&lt;/code&gt; 如何如何编译 extension 就可以了。&lt;/p&gt;
+
+&lt;p&gt;从另一个角度，&lt;code class=&quot;highlighter-rouge&quot;&gt;setuptools&lt;/code&gt; 是一个很完善的库，所以从命令行应该可以获取到一些信息，我们试试&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;python setup.py &lt;span class=&quot;nt&quot;&gt;-h&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;就可以知道 &lt;code class=&quot;highlighter-rouge&quot;&gt;--help-commands&lt;/code&gt; 命令，再通过&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;python setup.py &lt;span class=&quot;nt&quot;&gt;--help-commands&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;就可以得到每个命令的说明。&lt;/p&gt;
+
+&lt;p&gt;显然 &lt;code class=&quot;highlighter-rouge&quot;&gt;build&lt;/code&gt; 命令是我们唯一需要的。&lt;/p&gt;
+
+&lt;p&gt;让我们先试一试，&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;pip install pyyaml numpy
+python setup.py build
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Works like a charm.&lt;/p&gt;
+
+&lt;h2 id=&quot;why&quot;&gt;Why?&lt;/h2&gt;
+
+&lt;p&gt;为什么不仔细读每一行代码，尤其是，为什么不先读一下 &lt;code class=&quot;highlighter-rouge&quot;&gt;setuptools&lt;/code&gt; 的文档呢？&lt;/p&gt;
+
+&lt;p&gt;最主要的原因，当然是因为 &lt;code class=&quot;highlighter-rouge&quot;&gt;setuptools&lt;/code&gt; 也好，具体编译的 flag 也好，都无关我们的目的。在这里花费时间没有什么意义。&lt;/p&gt;
+
+&lt;p&gt;另外，我想要说明一个我阅读代码的大方向和思路。PyTorch 刚好是用 python 写的 &lt;code class=&quot;highlighter-rouge&quot;&gt;setup.py&lt;/code&gt;，比较简单，你也可以 argue 说学了也比较实用。若是改天遇上一个手写 Makefile 的怎么办？难不成先学一遍 Makefile 不成？但是你又没有写 Makefile 的需求，也不会对你了解项目有太大帮助，而且这年头你也不太可能在任何新项目中写 Makefile 了，而且学 Makefile 是不是应该先精通 shell？若是你读 TensorFlow，还要先学会 Bazel 么，学会了，你自己的项目用得起来么？&lt;/p&gt;
+
+&lt;p&gt;接口也好，语法也罢，都是无关痛痒的，今天看了一遍，明天就忘了。种种 tools，追根究底只是一个 implementation，就说 Bazel，有意义的问题只有，为什么它那么快（可能还有，为什么你用不起来），至于如何配置，不过是一个某种意义上很随意的选择，除非决定要用，不然没什么学习的价值。说老实话，我连很多我自己一行行写出来的东西都不记得了。看其他的项目，我觉得最有价值的是学到正确的做法是什么。比如说对于这个 &lt;code class=&quot;highlighter-rouge&quot;&gt;setup.py&lt;/code&gt;，如果通过上面的阅读，理解 &lt;code class=&quot;highlighter-rouge&quot;&gt;setup.py&lt;/code&gt; 的基本工作模式和原理，并且知道在 python 中如果开发一个库应该使用 &lt;code class=&quot;highlighter-rouge&quot;&gt;setup.py&lt;/code&gt; 和 &lt;code class=&quot;highlighter-rouge&quot;&gt;setuptools&lt;/code&gt; （或者 &lt;code class=&quot;highlighter-rouge&quot;&gt;distutils&lt;/code&gt;）来打包分发就可以了。最好还可以记住 PyTorch 用到了 &lt;code class=&quot;highlighter-rouge&quot;&gt;setuptools&lt;/code&gt; 比较全面的功能，可以在需要的时候拿来作为 demo 参考，我觉得就足够了。&lt;/p&gt;
+
+&lt;h2 id=&quot;whats-in-there&quot;&gt;What’s in there&lt;/h2&gt;
+
+&lt;p&gt;好吧，那么依赖有哪些呢，ATen，nanopb，libshm，gloo，THD，nccl，调用 &lt;code class=&quot;highlighter-rouge&quot;&gt;torch/lib/build_libs.sh&lt;/code&gt; 来编译。&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;torch/lib/build_libs.sh&lt;/code&gt; 就很清楚了，利用 CMake 编译这些依赖，现在还没必要仔细研究编译过程。&lt;/p&gt;
+
+&lt;p&gt;重要的是这些依赖的功能。&lt;/p&gt;
+
+&lt;p&gt;ATen，核心中的核心，PyTorch 的 Tensor 库。&lt;/p&gt;
+
+&lt;p&gt;nanopb，看起来是一个精简版的 protobuf，PyTorch 需要它做什么呢？还不清楚。不过可以想见，应当可以用在多机并行和保存（序列化）模型的过程中。暂时不需要深究这些问题，重要的是我们要记住有这个库可以做这些事就可以了。&lt;/p&gt;
+
+&lt;p&gt;libshm，共享内存。我的第一反应是用在 &lt;code class=&quot;highlighter-rouge&quot;&gt;DataLoader&lt;/code&gt; 或者类似的情况中，在多进程间共享 Tensor。Again，我写这一系列文章的时候对于 PyTorch 代码的理解并不比大家多，所以我们可以一起来慢慢看。&lt;/p&gt;
+
+&lt;p&gt;gloo，并行算法库。&lt;/p&gt;
+
+&lt;p&gt;THD，从名字来看应当是并行时用到的 Tensor 库，不过信息太少，我们之后再看。&lt;/p&gt;
+
+&lt;p&gt;另外可以看到 &lt;code class=&quot;highlighter-rouge&quot;&gt;torch/lib&lt;/code&gt; 下面的 &lt;code class=&quot;highlighter-rouge&quot;&gt;pybind11&lt;/code&gt;。用来绑定 python 和 C++ 的结构的库。如果读一下 &lt;code class=&quot;highlighter-rouge&quot;&gt;README&lt;/code&gt;，它是 header only 的，再在项目中搜索一下 &lt;code class=&quot;highlighter-rouge&quot;&gt;pybind&lt;/code&gt; 就会看到它是在编译 PyTorch 的 extension 的时候编译的。&lt;/p&gt;
+
+&lt;p&gt;好，那么大体上我们已经把整个结构理清了。&lt;/p&gt;
+
+&lt;h2 id=&quot;how-pytorch-is-organized&quot;&gt;How PyTorch is organized&lt;/h2&gt;
+
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;aten&lt;/code&gt;: Tensor 库。顺带一说，虽然理论上是说 Torch 和 PyTorch 要齐头并进，但是事实上 Torch 已经快半年没更新了，到现在 Torch 也没用上新的 Aten ……&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;cmake&lt;/code&gt;: 一些 CMake 相关的脚本。&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;docs&lt;/code&gt;: 文档，在官网上读就可以了。&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;test&lt;/code&gt;: 可以略过。&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;tools&lt;/code&gt; 和 &lt;code class=&quot;highlighter-rouge&quot;&gt;torch&lt;/code&gt; …… 嗯……&lt;/p&gt;
+
+&lt;p&gt;我们再回过头来看看 &lt;code class=&quot;highlighter-rouge&quot;&gt;setup.py&lt;/code&gt; 里的 &lt;code class=&quot;highlighter-rouge&quot;&gt;packages&lt;/code&gt;，可以看到&lt;/p&gt;
+
+&lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;n&quot;&gt;packages&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;find_packages&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;exclude&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'tools'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;'tools.*'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,))&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;最终安装的 python 代码只包括 &lt;code class=&quot;highlighter-rouge&quot;&gt;torch&lt;/code&gt; 下的的文件。显然， &lt;code class=&quot;highlighter-rouge&quot;&gt;tools&lt;/code&gt; 只是为了开发和编译而存在的。&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;tools&lt;/code&gt;: 开发和编译中的工具。&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;torch&lt;/code&gt;: PyTorch 的源代码。&lt;/p&gt;
+
+&lt;h2 id=&quot;lets-get-the-party-started&quot;&gt;Let’s get the party started&lt;/h2&gt;
+
+&lt;p&gt;好，我们可以正式的开始阅读代码了。代码主要分布在 &lt;code class=&quot;highlighter-rouge&quot;&gt;aten&lt;/code&gt; 和 &lt;code class=&quot;highlighter-rouge&quot;&gt;torch&lt;/code&gt; 两个文件夹中。首先，我们就从 PyTorch 的最核心，最根本的部分，Aten 开始。&lt;/p&gt;
+
+</description>
+        <pubDate>Tue, 06 Feb 2018 09:00:00 +0800</pubDate>
+        <link>https://blog.zhuhaow.me/machine/learning/pytorch/2018/02/06/a-random-walk-in-pytorch-2/</link>
+        <guid isPermaLink="true">https://blog.zhuhaow.me/machine/learning/pytorch/2018/02/06/a-random-walk-in-pytorch-2/</guid>
+      </item>
+    
+      <item>
+        <title>A random walk in PyTorch (1)</title>
+        <description>&lt;p&gt;这是一系列我拖延了很久很久很久的文章。&lt;/p&gt;
+
+&lt;p&gt;很久之前，我就决定通读一个深度学习的基础库。根本上来说，这些库的核心并没有什么高深莫测的技术，但是仍有着很多工程上的细节。使用这样的计算库，追求的就是不仅仅是开发效率，也同样有着运行效率的考量。而只有深入了这些库，才能够做到真正的理解它们的差异，提升运行的效率。此外，还有另一个我很关心的则是项目代码的组织问题。&lt;/p&gt;
+
+&lt;p&gt;我向来都懒的把学习的心得写成文章，一来记录效率太低，二来意义也不大，所以每天欺骗自己花钱租 VPS 搭博客是为了促进学习其实一个字都懒得写。但是仔细读代码这件事情确实很难让我提起兴趣（还是走马观花或者直奔主题的比较多），以至于这件事拖延至今。所以我下决心写这一系列文章作为对我自己的一个约束（也是要让自己觉得 VPS 钱没白花不是）。写这一系列文章的时候，我其实也还没读过 PyTorch 的代码。&lt;/p&gt;
+
+&lt;p&gt;按照我一贯的习惯，我假设读者有基本的机器学习的常识和计算机的基本知识，很基础就行，你甚至不需要知道什么是 BLAS。但我也不会去解释 C 和 Python 有什么区别，所以读者还是要有基本的概念。因为我懒，很多问题应该都是点到为止，毕竟任何具体技术的介绍文章网上都是汗牛充栋，重复一遍没有太大意义，我也很难写到他们的水平。当然，如果我手头恰好有合适的资料我也会一起给出来。&lt;/p&gt;
+
+&lt;p&gt;这一系列文章，我预计将会有很大的一部分关注在背景知识、项目的代码组织结构和整个框架的组织结构上，涉及具体的代码细节的分析应当不会太多。&lt;/p&gt;
+
+&lt;p&gt;我个人不觉得逐行仔细阅读具体的代码有太大帮助，重要的是大方向上的逻辑和思路。当然如果觉得写功能这件事情有难度的话倒是可以多读多练，但我个人通常是一个想的比写的多的人。框架编写组织设计的逻辑总是第一位的，其他的都顺理成章，如果一个库都没有一个清晰的逻辑，那我个人建议尽量绕着走。&lt;/p&gt;
+
+&lt;h2 id=&quot;why-pytorch&quot;&gt;Why PyTorch?&lt;/h2&gt;
+
+&lt;p&gt;如果这篇文章有人读的话（谢谢大家），想来也是知道 PyTorch 是什么的，大概第一个问题是：为什么不是 TensorFlow ？&lt;/p&gt;
+
+&lt;p&gt;太多人爱 TensorFlow，毋庸置疑的热爱，虽然我不太确定这是不是阅尽千帆后的热爱。TensorFlow 几乎解决了深度学习从训练到部署的一切需求，似乎没有太多的理由不使用它。为了不模糊重点，这一系列的文章中，我会尽量避免对 TensorFlow 具体的评价。当然了，我也没有仔细研究过 TensorFlow，也没有资本去评价什么。&lt;/p&gt;
+
+&lt;p&gt;但即便你是 TensorFlow 的狂热粉丝，分析了解 PyTorch 依然会对你很有帮助：&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;如果已经对 TensorFlow 了若指掌，那么理解 PyTorch 的底层实现也花不了你几分钟的时间（literally），但有可能会给你一个新的角度来看待问题。&lt;/li&gt;
+  &lt;li&gt;如果你对 TensorFlow 的底层一无所知，那么相较于复杂和笨重的 TensorFlow，PyTorch 将会是一个更加简单清晰的入门基础。&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;在 GitHub 上，TensorFlow 有八万多个 star&lt;sup id=&quot;fnref:1&quot;&gt;&lt;a href=&quot;#fn:1&quot; class=&quot;footnote&quot;&gt;1&lt;/a&gt;&lt;/sup&gt;，而 PyTorch 才刚刚一万出头&lt;sup id=&quot;fnref:2&quot;&gt;&lt;a href=&quot;#fn:2&quot; class=&quot;footnote&quot;&gt;2&lt;/a&gt;&lt;/sup&gt;，在可预见的未来，我并不觉得这一趋势会有太大的变化。某种意义上，可以说 PyTorch 是研究人员自己对 Torch 的救赎，终究还是研究人员自己的工具，从侧重点和功能上就难以获得如 TensorFlow 一般的影响力。当然，用户最多的东西也不总是最优秀的——某些语言就是很好的例证，我就不引战了。&lt;/p&gt;
+
+&lt;p&gt;如果你想要知道我对框架设计理念的偏好，我一直用的是 Lasagne 而不是 Keras。&lt;/p&gt;
+
+&lt;p&gt;言归正传，回到 PyTorch 上来。&lt;/p&gt;
+
+&lt;h2 id=&quot;pytorch-is-easier-to-learn&quot;&gt;PyTorch is easier to learn&lt;/h2&gt;
+&lt;p&gt;PyTorch 是一个 Imperative ，而非 Declarative 的计算框架，如果你熟悉 Theano 或是 TensorFlow，这应该很好理解。只要写程序的人，没有人不熟悉 Imperative 的模式，只是太多时候，大家不了解 Declarative 模式，没有对比，也就觉得 Imperative 并不存在。&lt;/p&gt;
+
+&lt;p&gt;在一般的程序中，如果我们写：&lt;/p&gt;
+
+&lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;n&quot;&gt;a&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;5&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;b&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;a&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;3&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;c&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;b&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;4&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;print&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;c&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;c&quot;&gt;# 12&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;我们预期，程序会先创建变量 &lt;code class=&quot;highlighter-rouge&quot;&gt;a&lt;/code&gt;，然后得到变量 &lt;code class=&quot;highlighter-rouge&quot;&gt;b&lt;/code&gt;，再得到变量 &lt;code class=&quot;highlighter-rouge&quot;&gt;c&lt;/code&gt;，最后打印变量&lt;code class=&quot;highlighter-rouge&quot;&gt;c&lt;/code&gt;。（当然，这不一定是事实，不论是对 Python 还是 C，编译器/解释器都可能会做相当程度的优化来抹去这两个中间变量。）&lt;/p&gt;
+
+&lt;p&gt;大多数人接触过的 Declarative 的语言，大概是 SQL，在 SQL 中，考虑如下代码：&lt;/p&gt;
+
+&lt;div class=&quot;language-sql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;SELECT&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;FROM&lt;/span&gt; 
+&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;SELECT&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;FROM&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Person&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;WHERE&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Age&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;30&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;WHERE&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Age&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;40&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;虽然这段代码太过牵强，但是除了代码本身的无意义之外，还有人可能会担心性能问题：先检索创建一个临时表，然后再次检索临时表，显然对效率有极大影响，对吧？&lt;/p&gt;
+
+&lt;p&gt;事实上，上面的代码和下面没什么区别：&lt;/p&gt;
+
+&lt;div class=&quot;language-sql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;SELECT&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;FROM&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Person&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;WHERE&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Age&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;30&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;AND&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Age&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;40&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;这就是 Declarative，你只说要做什么，却不说要怎么做，其他的部分都由负责执行的组件负责。&lt;/p&gt;
+
+&lt;p&gt;当然，在任何语言中，由于编译器的优化，很多时候 Declarative 和 Imperative 的区隔并非那么明显。尤其是如果一些库在库的层面上就做了很多优化，使得我们在某种意义上在 Imperative 的语言中实现了 Declarative 的效果，使得大家觉得这两个模式总是混杂在一起。但是两者核心思路的区别仍是非常清晰的。不过，想要真正体会到 Declarative，可能还是需要学习一些从根本上就是 Declarative 的语言才行。&lt;/p&gt;
+
+&lt;p&gt;在 TensorFlow 中，我们用 Python 构建一个 computation graph (dataflow graph)。由于 Python 本身没有进行计算，Python 中的 &lt;code class=&quot;highlighter-rouge&quot;&gt;if&lt;/code&gt; 和 最终的 graph 没有任何关系，所以我们才会遇到需要使用 &lt;code class=&quot;highlighter-rouge&quot;&gt;tf.cond&lt;/code&gt; 的情况。最终，我们用 &lt;code class=&quot;highlighter-rouge&quot;&gt;Session&lt;/code&gt; 来 &lt;code class=&quot;highlighter-rouge&quot;&gt;run&lt;/code&gt; 我们构建得到的 graph。预先构建声明 graph 的好处很多，最明显的，就是（潜在的）性能的提升，尤其是计算资源和调度的优化（对新手而言，数值的稳定性可能也是一个优势，不过 TensorFlow 似乎没有相关的优化），通过另行实现的 VM 执行 graph 定义的运算，TensorFlow 的性能和 Python 几乎没有什么关系。在谈到 JIT 的时候我可能会进一步的展开这个问题。总之，Declarative 的计算框架确实有很明显的优势，使得 TensorFlow 仍然选择了 Declarative 的方式 （TensorFlow 已经开始支持 Imperative 的方式了&lt;sup id=&quot;fnref:12&quot;&gt;&lt;a href=&quot;#fn:12&quot; class=&quot;footnote&quot;&gt;3&lt;/a&gt;&lt;/sup&gt;）。&lt;/p&gt;
+
+&lt;p&gt;但是，虽然 TensorFlow 在一定程度上优化了 Theano 编译过慢的问题，却仍然不可能解决 Declarative 最大的问题——难以调试。由于声明和运算是分离的，而实际的计算又往往发生在一个高度优化的，不使用宿主语言的 VM 中，使得调试变得极为困难。错误发生时，往往都不在 Python 的 VM 里，使得所有的 Python Debugger 全部失效。&lt;/p&gt;
+
+&lt;p&gt;另一方面，由于需要构建 computation graph，也就意味着创建任何 TensorFlow （暂时）不支持的的结构都变得极为麻烦（曾经的 TensorFlow 是没有 &lt;code class=&quot;highlighter-rouge&quot;&gt;scan&lt;/code&gt; 的哦）。同时，这也意味着动态创建、修改 graph（比如 Recursive Neural Network）也很困难。&lt;/p&gt;
+
+&lt;p&gt;PyTorch 是 Imperative 的，换言之，我们用 Python 来描述计算的过程就是我们进行计算的过程。简单地来看，当我们在 PyTorch 中调用 &lt;code class=&quot;highlighter-rouge&quot;&gt;c = a + b&lt;/code&gt; 的时候，我们就进行了将 &lt;code class=&quot;highlighter-rouge&quot;&gt;a&lt;/code&gt; 和 &lt;code class=&quot;highlighter-rouge&quot;&gt;b&lt;/code&gt; 进行求和的计算，立刻得到 &lt;code class=&quot;highlighter-rouge&quot;&gt;c&lt;/code&gt; 的结果。从一般的角度理解，这本应当是理所当然的事，这也是我们每天写代码的方式，完全符合我们的预期。从实际使用的角度来说，更透明的调试和更自然的编写模式也很大程度上提升了我们的开发效率。&lt;/p&gt;
+
+&lt;p&gt;从另一个角度，我们可以简单的认为 PyTorch 就是将 TensorFlow 的 VM 转成了 Python 的 VM，因而 PyTorch 的复杂程度远低于 TensorFlow （当然这也有设计理念的问题）。所以，之前我说 PyTorch 是一个很适合进行分析入门的库，它有着机器学习库的核心，又刚好去掉了所有完成实验所不必须的部分（相较 TensorFlow），使得我们可以分析到实现一个实验的过程中最最根本、重要的部分。&lt;/p&gt;
+
+&lt;h2 id=&quot;pytorch-there-must-be-some-torch&quot;&gt;PyTorch…… There must be some Torch&lt;/h2&gt;
+
+&lt;p&gt;在一篇机器学习的狂热中，可能没有多少人听说过 Torch，就如同几乎无人问津的 Julia 一样，优秀而寂寞。&lt;/p&gt;
+
+&lt;p&gt;虽然 Torch 的用户金光闪闪，Facebook，Twitter，Google，DeepMind …… 但是，只要想到还要学 Lua …… 人生巅峰似乎远了一点，还是算了吧 ……&lt;/p&gt;
+
+&lt;p&gt;好吧，Torch 的缺点其实也不少。&lt;/p&gt;
+
+&lt;p&gt;但是我个人觉得，语言也好，库也好，不是终身大事，大家别这么看重，很多人选择学哪个库搞得可能比作者对这个库都慎重，真心犯不着。这东西顶天了算个着装 style，不仅可以换，可以穿插着来，有的时候只有了解学习的够多才可能玩出混搭风不是。学习要抓住核心和逻辑，具体的 API 无关紧要。见得多了，不仅学的快，也更容易看出好坏了。&lt;/p&gt;
+
+&lt;p&gt;当然了，这个问题太 tricky，比如我觉得哪怕随便学学 Haskell 对个人的成长也比弄明白 &lt;code class=&quot;highlighter-rouge&quot;&gt;universe_init()&lt;/code&gt; 是干嘛的更有帮助一点，但是可能后者面试 Java 岗就是高级工程师，我一面试人家发现我连 API 都不知道，直接踹一边儿去了。而且吧，每个人的情况也各有不同：有的人的工作就是优化 JVM，搞明白这些是理所当然的，也是工作最需要的；有的人就是混个饭吃，恨不能学上一年就抱着传家；有的人想要先入行再深造，谈那些面试工作直接用不上的东西确实不是现阶段的目标。不过我一直觉得，光有深度，没有广度，一根针是站不稳的，大家 get 到 point 就好。&lt;/p&gt;
+
+&lt;p&gt;扯远了，光引战，还是回归正题。&lt;/p&gt;
+
+&lt;p&gt;Torch 的历史可能比很多人对机器学习的了解都要古老。2002年，当 Torch 发布时&lt;sup id=&quot;fnref:3&quot;&gt;&lt;a href=&quot;#fn:3&quot; class=&quot;footnote&quot;&gt;4&lt;/a&gt;&lt;/sup&gt;，SciPy 才刚发布不久，NumPy 还在遥远的四年后，Theano 更是遥遥无期。更多的时候，人们使用 SVMLight 或是 OpenCV，然后自己写 C 或是 C++ 把这些库给串起来，提点 feature 做上千八百张小图片的处理识别。&lt;/p&gt;
+
+&lt;p&gt;第一版的 Torch 是一个 C++ 的库，当年的开发者们对于快速原型开发没有今天这样的追求，也可能是因为当年的人们对于底层的语言也都足够娴熟，anyway，Torch 的前三个版本都对 Lua 没有任何支持。不过 C++ 的接口定义也和今天的 Lua 别无二致。没有 Torch4（我不知道为什么，可能 Ronan Collobert 在写了一个 OC 版本的 Torch 后放弃了&lt;sup id=&quot;fnref:4&quot;&gt;&lt;a href=&quot;#fn:4&quot; class=&quot;footnote&quot;&gt;5&lt;/a&gt;&lt;/sup&gt;），2006 年发布的 Torch 5 提供了对于 Lua 的支持。&lt;/p&gt;
+
+&lt;p&gt;2014 年的 Torch 7（嗯，没有 6），也就是今天的 Torch，和 Caffe 同期（Torch 晚一些）推出。Torch 7 提供了对 GPU 的支持，Lua 提供了完美的可编程性，编译（我觉得）比 Caffe 更简单，但是依然没有 Caffe 的影响力。当然了，这里可能也有很多别的原因。&lt;/p&gt;
+
+&lt;p&gt;任何机器学习库所支持的功能都很难超越机器学习的需求本身，在网络结构简单的那个年代里，Torch 是没有今天的 Container 的（只有 Sequential），这使得当年的 Torch 自带的 nn 难以支持今天我们习以为常的 ResNet 或是 Inception 结构，可能也是为何大家觉得 Caffe 也够用的原因。&lt;/p&gt;
+
+&lt;p&gt;不过这扯的就有点远了，而且曾经的历史也不是很重要。回到主题，既然 Torch 不错，为何还要再有 PyTorch 呢？&lt;/p&gt;
+
+&lt;h2 id=&quot;lua-rocks-lua-sucks&quot;&gt;Lua rocks, Lua sucks&lt;/h2&gt;
+
+&lt;p&gt;理论上来说，我是应当来给 Lua 唱唱赞歌拉拉票的，尤其是和如今火爆的语言相比，Lua 理应受到更多的关注。&lt;/p&gt;
+
+&lt;p&gt;虽然很多人可能从来没听说过 Lua，不过如果你在用 Windows，那么你的电脑中应该就有 Lua 的存在。几乎所有游戏的二次开发（War3/Dota2/etc）都是基于 Lua 完成的。作为动态语言，Lua 足够得快，足够得小，纯 ANSI C 实现的 Lua 有着完美的可移植性，几乎可以在所有的平台，所有的操作系统，所有的（当今的）硬件条件下运行。LuaJit &lt;sup id=&quot;fnref:5&quot;&gt;&lt;a href=&quot;#fn:5&quot; class=&quot;footnote&quot;&gt;6&lt;/a&gt;&lt;/sup&gt; 甚至可以达到接近 C 的运行速度&lt;sup id=&quot;fnref:6&quot;&gt;&lt;a href=&quot;#fn:6&quot; class=&quot;footnote&quot;&gt;7&lt;/a&gt;&lt;/sup&gt;。&lt;/p&gt;
+
+&lt;p&gt;是什么阻止了我们将 Python 嵌入到各个平台和系统中去呢？&lt;/p&gt;
+
+&lt;p&gt;第一个问题当然就是老生常谈的系统资源问题，这个显而易见，就不需要展开了。&lt;/p&gt;
+
+&lt;p&gt;对于 C 有了解的同学可能已经注意到了，纯 ANSI C 实现其实也就意味着 Lua 自身几乎做不了太多的和操作系统的交互。这也就意味着 Lua 的标准库必然很小很弱。事实上，Lua 的设计中只有一种数据结构&lt;sup id=&quot;fnref:7&quot;&gt;&lt;a href=&quot;#fn:7&quot; class=&quot;footnote&quot;&gt;8&lt;/a&gt;&lt;/sup&gt;（增强版的 Hash 表），可以想见，在这一设计理念的支撑下，Lua 的标准库可以用聊胜于无来形容。但是，如果不是纯 ANSI C 实现，就意味着移植必然需要实现一个兼容层，这里所要花费的精力和时间就难以估计了。&lt;/p&gt;
+
+&lt;p&gt;让我们来看看在 Lua 中如何分割字符串，这个处理数据时的常用操作。&lt;/p&gt;
+
+&lt;p&gt;根据大家的设想，分割字符串应当是类似这样的代码。&lt;/p&gt;
+
+&lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;n&quot;&gt;s&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;1,2,3&quot;&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;s&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;split&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;,&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;c&quot;&gt;# ['1', '2', '3']&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;如果你极其在意性能，那么可能会用类似这样的代码来避免拷贝字符串&lt;sup id=&quot;fnref:9&quot;&gt;&lt;a href=&quot;#fn:9&quot; class=&quot;footnote&quot;&gt;9&lt;/a&gt;&lt;/sup&gt;（Note: &lt;code class=&quot;highlighter-rouge&quot;&gt;strtok&lt;/code&gt; 不是 thread-safe 的，应当使用 &lt;code class=&quot;highlighter-rouge&quot;&gt;strtok_r&lt;/code&gt; 或 &lt;code class=&quot;highlighter-rouge&quot;&gt;strtok_s&lt;/code&gt;）：&lt;/p&gt;
+
+&lt;div class=&quot;language-c highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kt&quot;&gt;char&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;str&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;- This, a sample string.&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;kt&quot;&gt;char&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;pch&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;pch&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;strtok&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;str&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot; ,.-&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;while&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;pch&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;!=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;printf&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;%s&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;pch&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;pch&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;strtok&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot; ,.-&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;那么在 Lua 中，我们应当怎么做呢？我们设想着应当有一个 split 函数将 string 转为一个 table （还记得这唯一的数据结构么）。但是，并没有。&lt;/p&gt;
+
+&lt;p&gt;如果你仔细想想，这也不算是不合理。试想，标准库应当尽可能的 general，我们不应对 delimiter 做太多的假设。那么 delimiter 会是什么呢？字符？字符串？正则？变量（可能随着分割次数变化）？两个连续的 delimiter 应当如何处理呢？既然我们要提供一个精简的标准库，那么不如就不要做这些假设比较好。&lt;/p&gt;
+
+&lt;p&gt;算是合理，那么我们如何在 Lua 中完成一个简单的分割字符串功能呢？&lt;/p&gt;
+
+&lt;p&gt;你需要&lt;strong&gt;自己写&lt;/strong&gt;以下代码&lt;sup id=&quot;fnref:8&quot;&gt;&lt;a href=&quot;#fn:8&quot; class=&quot;footnote&quot;&gt;10&lt;/a&gt;&lt;/sup&gt;：&lt;/p&gt;
+
+&lt;div class=&quot;language-lua highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;string&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;split&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sep&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+   &lt;span class=&quot;kd&quot;&gt;local&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;sep&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;fields&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;sep&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;or&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;:&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{}&lt;/span&gt;
+   &lt;span class=&quot;kd&quot;&gt;local&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;pattern&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;string.format&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;([^%s]+)&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;sep&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+   &lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;gsub&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;pattern&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;c&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;fields&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;#&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;fields&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;c&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+   &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;fields&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;即便不会 Lua，我们只要注意到 &lt;code class=&quot;highlighter-rouge&quot;&gt;fields[#fields+1] = c&lt;/code&gt; 是将 token 存到 table 中去，并使用当前 table 的 size 作为 key 就可以了，其他的地方都一目了然。&lt;/p&gt;
+
+&lt;p&gt;其他语言的标准库的 split 的实现逻辑上也不会和上面的代码有什么根本差别（要优化一下数据结构和一些细节，输入往往不会直接使用正则），而且只要正则优化的够好，上面的代码性能也不会差。但是，你还愿意用 Lua 吗？&lt;/p&gt;
+
+&lt;p&gt;单薄的标准库对于老手而言，也不算是一件坏事，就如同 Rails 的使用者纷纷跳转 Sinatra 一样。但是，如果你和新手说 Sinatra 内容少所以学习曲线平缓，那估计他要被坑死。&lt;/p&gt;
+
+&lt;p&gt;本质上来说，Lua 就是 Sinatra。它提供了最基本的标准库，但除此之外一无所有。对于新手而言，我们当然可以在网上找到相关的库，比如我一搜便搜到了 Allen &lt;sup id=&quot;fnref:10&quot;&gt;&lt;a href=&quot;#fn:10&quot; class=&quot;footnote&quot;&gt;11&lt;/a&gt;&lt;/sup&gt;。但是，我们可以保证标准库的准确性和兼容性，没有经验的新手如何检查第三方库的质量呢？同时，由于使用者的不足，很多错误更是难以被发现，库的维护者自身也缺少维护的动力。&lt;/p&gt;
+
+&lt;p&gt;同时，使用人数太少使得我们难以判断第三方库是否已经 production ready，比如 Lua 版的 Pandas —— DataFrame&lt;sup id=&quot;fnref:11&quot;&gt;&lt;a href=&quot;#fn:11&quot; class=&quot;footnote&quot;&gt;12&lt;/a&gt;&lt;/sup&gt;，已经快一年没有更新了。那么，它还可以用么？不知道。还会继续维护么？不知道。当然，实际情况会乐观的多，因为 Lua 的版本一般是固定的（5.1，为了使用 LuaJit），而 Torch 的 Lua 接口也不太可能会有大的变化，即便有问题也应该会是显式的错误。所以我们还是可以放心的尝试 DataFrame。&lt;/p&gt;
+
+&lt;p&gt;从工程上看，由于最基本的标准库都缺乏，同时又缺少 NumPy，Pandas 这样的和标准库质量和影响力无异的第三方库，使得 Lua 的工程选择极其困难，很容易陷入到我用这个，你用那个，还反反复复造轮子的境地。&lt;/p&gt;
+
+&lt;p&gt;由于 Lua 的原生用户很少，使用 Lua 也意味着重新了解一个完全不同的生态圈，这也将是一个巨大的学习成本。&lt;/p&gt;
+
+&lt;p&gt;种种因素的叠加，虽然有很多 Torch 的用户金光闪闪，Torch 本身却没有获得太大的影响力。&lt;/p&gt;
+
+&lt;h2 id=&quot;pytorch-to-the-rescue&quot;&gt;PyTorch to the rescue&lt;/h2&gt;
+
+&lt;p&gt;Torch 也尝试过在 Lua 中调用 Python&lt;sup id=&quot;fnref:13&quot;&gt;&lt;a href=&quot;#fn:13&quot; class=&quot;footnote&quot;&gt;13&lt;/a&gt;&lt;/sup&gt;，不过显然不会有多少人真的想要依赖这种方式。&lt;/p&gt;
+
+&lt;p&gt;那为什么还要强求呢？那就从了吧。&lt;/p&gt;
+
+&lt;p&gt;于是将 Torch 的 Lua binding 换成 Python binding，就有了 PyTorch。&lt;/p&gt;
+
+&lt;p&gt;虽然迁移到 Python 克服了 Lua 的劣势，却也丢失了 Lua 的巨大优势：Lua + LuaJIT ，可能是我知道的最快的动态语言。在 Python 中，性能事实上成为了很大的瓶颈，GIL 加上 Python 自身的性能瓶颈（在 Python 中条件跳转都是非常昂贵的），使得 saturate 多 GPU 较为困难（对一般人来说这基本不是问题）。我们之后应该会再讨论到这个问题。&lt;/p&gt;
+
+&lt;p&gt;不过，语言就是这么的重要，Torch 在 GitHub 上只有七千多 star 的时候，PyTorch 已然后来居上，过万了……&lt;/p&gt;
+
+&lt;h2 id=&quot;lets-go&quot;&gt;Let’s GO&lt;/h2&gt;
+
+&lt;p&gt;这篇讲的东西都没啥实际的内容，就不再废话了。&lt;/p&gt;
+
+&lt;p&gt;下一章，我们将从 &lt;code class=&quot;highlighter-rouge&quot;&gt;setup.py&lt;/code&gt; 着手，先分析一下 PyTorch 的整体组织结构。&lt;/p&gt;
+
+&lt;div class=&quot;footnotes&quot;&gt;
+  &lt;ol&gt;
+    &lt;li id=&quot;fn:1&quot;&gt;
+      &lt;p&gt;https://github.com/tensorflow/tensorflow &lt;a href=&quot;#fnref:1&quot; class=&quot;reversefootnote&quot;&gt;&amp;#8617;&lt;/a&gt;&lt;/p&gt;
+    &lt;/li&gt;
+    &lt;li id=&quot;fn:2&quot;&gt;
+      &lt;p&gt;https://github.com/pytorch/pytorch &lt;a href=&quot;#fnref:2&quot; class=&quot;reversefootnote&quot;&gt;&amp;#8617;&lt;/a&gt;&lt;/p&gt;
+    &lt;/li&gt;
+    &lt;li id=&quot;fn:12&quot;&gt;
+      &lt;p&gt;https://github.com/tensorflow/tensorflow/blob/master/tensorflow/contrib/eager/README.md &lt;a href=&quot;#fnref:12&quot; class=&quot;reversefootnote&quot;&gt;&amp;#8617;&lt;/a&gt;&lt;/p&gt;
+    &lt;/li&gt;
+    &lt;li id=&quot;fn:3&quot;&gt;
+      &lt;p&gt;http://citeseerx.ist.psu.edu/viewdoc/download;jsessionid=CBB0C8A5FE34F6D6DAFF997F6B6A205A?doi=10.1.1.8.9850&amp;amp;rep=rep1&amp;amp;type=pdf &lt;a href=&quot;#fnref:3&quot; class=&quot;reversefootnote&quot;&gt;&amp;#8617;&lt;/a&gt;&lt;/p&gt;
+    &lt;/li&gt;
+    &lt;li id=&quot;fn:4&quot;&gt;
+      &lt;p&gt;https://github.com/andresy/torch4 &lt;a href=&quot;#fnref:4&quot; class=&quot;reversefootnote&quot;&gt;&amp;#8617;&lt;/a&gt;&lt;/p&gt;
+    &lt;/li&gt;
+    &lt;li id=&quot;fn:5&quot;&gt;
+      &lt;p&gt;http://luajit.org &lt;a href=&quot;#fnref:5&quot; class=&quot;reversefootnote&quot;&gt;&amp;#8617;&lt;/a&gt;&lt;/p&gt;
+    &lt;/li&gt;
+    &lt;li id=&quot;fn:6&quot;&gt;
+      &lt;p&gt;https://julialang.org/benchmarks/ &lt;a href=&quot;#fnref:6&quot; class=&quot;reversefootnote&quot;&gt;&amp;#8617;&lt;/a&gt;&lt;/p&gt;
+    &lt;/li&gt;
+    &lt;li id=&quot;fn:7&quot;&gt;
+      &lt;p&gt;https://www.lua.org/pil/11.html &lt;a href=&quot;#fnref:7&quot; class=&quot;reversefootnote&quot;&gt;&amp;#8617;&lt;/a&gt;&lt;/p&gt;
+    &lt;/li&gt;
+    &lt;li id=&quot;fn:9&quot;&gt;
+      &lt;p&gt;http://www.cplusplus.com/reference/cstring/strtok/ &lt;a href=&quot;#fnref:9&quot; class=&quot;reversefootnote&quot;&gt;&amp;#8617;&lt;/a&gt;&lt;/p&gt;
+    &lt;/li&gt;
+    &lt;li id=&quot;fn:8&quot;&gt;
+      &lt;p&gt;http://lua-users.org/wiki/SplitJoin &lt;a href=&quot;#fnref:8&quot; class=&quot;reversefootnote&quot;&gt;&amp;#8617;&lt;/a&gt;&lt;/p&gt;
+    &lt;/li&gt;
+    &lt;li id=&quot;fn:10&quot;&gt;
+      &lt;p&gt;https://github.com/Yonaba/Allen &lt;a href=&quot;#fnref:10&quot; class=&quot;reversefootnote&quot;&gt;&amp;#8617;&lt;/a&gt;&lt;/p&gt;
+    &lt;/li&gt;
+    &lt;li id=&quot;fn:11&quot;&gt;
+      &lt;p&gt;https://github.com/AlexMili/torch-dataframe/ &lt;a href=&quot;#fnref:11&quot; class=&quot;reversefootnote&quot;&gt;&amp;#8617;&lt;/a&gt;&lt;/p&gt;
+    &lt;/li&gt;
+    &lt;li id=&quot;fn:13&quot;&gt;
+      &lt;p&gt;https://github.com/facebookarchive/fblualib/blob/master/fblualib/python/README.md &lt;a href=&quot;#fnref:13&quot; class=&quot;reversefootnote&quot;&gt;&amp;#8617;&lt;/a&gt;&lt;/p&gt;
+    &lt;/li&gt;
+  &lt;/ol&gt;
+&lt;/div&gt;
+</description>
+        <pubDate>Sat, 20 Jan 2018 15:40:29 +0800</pubDate>
+        <link>https://blog.zhuhaow.me/machine/learning/pytorch/2018/01/20/a-random-walk-in-pytorch/</link>
+        <guid isPermaLink="true">https://blog.zhuhaow.me/machine/learning/pytorch/2018/01/20/a-random-walk-in-pytorch/</guid>
+      </item>
+    
+      <item>
+        <title>某些网络工具的安全性</title>
+        <description>&lt;p&gt;虽然网络上充斥着对某些上网工具不同参数组合的主观感受和近乎玄学的经历，以及种种工具间粉丝的互撕，但奇怪的是我却很少看到有人真正分享安全性背后的原理和不安全的原因，种种描述和感受常常让人有一种火电水电的既视感。&lt;/p&gt;
+
+&lt;p&gt;虽然我对于 Cryptography 只是略懂皮毛，但是还是想写点分析，算是抛砖引玉了。写的比较浅显，毕竟啥也不精，也没能力做学术交流，如果有什么意见可以随意留言。预备知识只需要一点点对称加密的皮毛即可。&lt;/p&gt;
+
+&lt;p&gt;Updated:&lt;/p&gt;
+
+&lt;p&gt;感谢Rio的讨论，增加了一些安全本身的分析。&lt;/p&gt;
+
+&lt;h2 id=&quot;在我们谈安全时我们究竟在谈什么&quot;&gt;在我们谈安全时，我们究竟在谈什么&lt;/h2&gt;
+
+&lt;p&gt;&lt;del&gt;查了一下清华计算机系培养计划，居然没有一门针对安全的，可能是我漏了。&lt;/del&gt;（是我漏了，有选修课）&lt;/p&gt;
+
+&lt;p&gt;又查了一下浙大，唯一一门但还是选修课……&lt;/p&gt;
+
+&lt;p&gt;我个人是觉得呢，其实与其开那些花里胡哨的“人工智能”相关课程蜻蜓点水，或者搞得和个培训机构一样搞什么 Android、 iOS 开发，还不如好好教上一些基础，出来也算是无负于科班的名声。毕竟如果一个刚培训出来上岗俩月的就算了，零基础速成，要求安全未免太过。如果科班出身也弄出什么密码明文存储， hash 两遍增加密码安全性或者多种 hash 结合增加破解难度这些常见的“安全手段”的话，实在是说不过去吧。&lt;/p&gt;
+
+&lt;p&gt;不过话说回来，大多数安全问题的主要原因，并不是安全意识的好坏，而往往是 code by accident&lt;sup id=&quot;fnref:1&quot;&gt;&lt;a href=&quot;#fn:1&quot; class=&quot;footnote&quot;&gt;1&lt;/a&gt;&lt;/sup&gt; 的结果，用心不用心，负责不负责才是很多网站出安全问题的根本原因。&lt;/p&gt;
+
+&lt;p&gt;不废话了，言归正传，扯这么多无关的只是想说，安全这个东西吧，根本没人重视，很多时候很多人根本就不知道，也懒得搞明白自己在说什么。别的东西你随便找个网站复制黏贴它碰巧work了你就交差，看个demo恨不能直接解决你的问题（所以你活该要加班修 bug ），忽悠过去了就跑去和人家说你是“掌握”、“精通”，具有多年工作“经验”。但是一旦涉及安全问题，只要你没明白背后的原理，99.99% 你的理解是会出现偏差的。 ss 安全性的妖魔化就是例证。&lt;/p&gt;
+
+&lt;p&gt;通常的 Cryptography 有很多方面，而我们关心的工具我想应该只关注以下方面：&lt;/p&gt;
+&lt;ol&gt;
+  &lt;li&gt;Confidentiality&lt;/li&gt;
+  &lt;li&gt;Integrity&lt;/li&gt;
+  &lt;li&gt;Authentication&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;另外还有一项无关 Cryptography 的问题， Obfuscation。&lt;/p&gt;
+
+&lt;p&gt;除此之外的一切，要么是无关安全的实现细节，要么是更为艰涩的玄学，我就留待大神去分析了。&lt;/p&gt;
+
+&lt;h2 id=&quot;协议&quot;&gt;协议&lt;/h2&gt;
+
+&lt;p&gt;在展开任何细节之前，我们先看看基本的协议是怎样的。&lt;/p&gt;
+
+&lt;p&gt;ss 最基本的协议非常简单，从它的名字也可以看出来，是一个简化版的 socks 代理协议。&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;IV: VARIABLE | TYPE: 1 BYTE | REQUEST: VARIABLE
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;其中，从 &lt;code class=&quot;highlighter-rouge&quot;&gt;TYPE&lt;/code&gt; 开始的内容均为加密的，而 &lt;code class=&quot;highlighter-rouge&quot;&gt;REQUEST&lt;/code&gt; 的内容根据 &lt;code class=&quot;highlighter-rouge&quot;&gt;TYPE&lt;/code&gt; 的不同而不同。 Initial vector 应该不需要解释了吧。&lt;/p&gt;
+
+&lt;h5 id=&quot;type--1&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;TYPE&lt;/code&gt; = 1&lt;/h5&gt;
+&lt;p&gt;请求连接到 IPv4 地址：&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;IP: 4 BYTES | PORT: 2 BYTES | FORWARD DATA
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h5 id=&quot;type--4&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;TYPE&lt;/code&gt; = 4&lt;/h5&gt;
+&lt;p&gt;请求连接到 IPv6 地址：&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;IP: 16 BYTES | PORT: 2 BYTES | FORWARD DATA
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h5 id=&quot;type--3&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;TYPE&lt;/code&gt; = 3&lt;/h5&gt;
+&lt;p&gt;请求连接到域名：&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;HOST_LEN: 2 BYTES | HOST: HOST_LEN BYTES | PORT: 2 BYTES | FORWARD DATA
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;在服务器回复的时候，直接回复 IV 和加密后的数据，而所有的加密方式都是对称加密。&lt;/p&gt;
+
+&lt;h2 id=&quot;加密算法&quot;&gt;加密算法&lt;/h2&gt;
+
+&lt;p&gt;在读下去之前，我先问大家几个问题，大家可以自行判断你觉得如果一个算法的加密强度能够达到以下层级对你究竟是安全还是不安全，注意，只是解密你的数据，不是破解算法达到秒解数据需要的时间：&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;加密数据即便使用最顶级的超级计算机也需要一千年才能解密&lt;/li&gt;
+  &lt;li&gt;加密数据使用最顶级的计算机需要3个月才能解密&lt;/li&gt;
+  &lt;li&gt;加密数据使用普通台式机3个月就可以解密&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;大体上来说，现在大家闻之色变的算法处在若干年后基本也进入不了2的状态，很多大家表示最好换掉的处在1往上的状态，3的算法基本没有用过，因为新算法的运算量往往是几何级数增长的。&lt;/p&gt;
+
+&lt;p&gt;既然解密不可行，那么有没有其他的安全问题呢。&lt;/p&gt;
+
+&lt;p&gt;我先分析一个真实案例，大家可以判断这是安全呢还是不安全。&lt;/p&gt;
+
+&lt;p&gt;假设一个算法，一个中间人必须要记录你的所有数据连接传输的数据，如果他人品爆发，可能几百万条连接，如果正常，可能是几万亿条连接之后，他可以得到其中某两条（不可选择）的数据的明文异或后的值。&lt;/p&gt;
+
+&lt;p&gt;注意条件，这个中间人，可以取得你传输的数据，并且把它记录下来，然后还要进行匹配，费尽千辛万苦，在人品大爆发的前提下，才有可能获得数百万不止的连接中随机两条的数据明文的异或值，基本上连这两条数据是什么都恢复不出来，这还是在他确定你用了这个加密算法的情况下。&lt;/p&gt;
+
+&lt;p&gt;这个算法安全吗？&lt;/p&gt;
+
+&lt;p&gt;这差不多就是 ss 加密的安全程度，甚至还要安全数万倍不止。&lt;/p&gt;
+
+&lt;p&gt;在学界和业界的一些人看来，这个算法是不够安全的，不错，但是对你安全不安全，我觉得大家可以自己判断。&lt;/p&gt;
+
+&lt;!-- 那么，怎么加密呢？各个论坛和群组中众人闻 RC4-MD5 色变，高谈 chacha20 如何快过 AES。 --&gt;
+
+&lt;!-- 但是呢，这个问题是这样的：如果你觉得 RC4-MD5 对你不够安全，嗯，我是不知你究竟牵涉进了什么大事，不过首先你的需求就使得你的水平不应该在读这篇文章而是在研读 CCS 的论文（或者请个安全团队），然后把你的安满国产软件的 Windows 格了换成 Tails，把你的 Android 扔进垃圾桶换成 iPhone；至于 chacha20，只能说如果你是在路由器上跑我还能理解；像 AES 都不够安全这种神论就不要再说了。 --&gt;
+
+&lt;p&gt;好了，废话扯完回归协议本身。&lt;/p&gt;
+
+&lt;h2 id=&quot;问题在哪&quot;&gt;问题在哪？&lt;/h2&gt;
+
+&lt;p&gt;这个似乎已经“不安全”成一个筛子的协议的问题究竟出在哪呢？&lt;/p&gt;
+
+&lt;p&gt;如果有安全意识的应该已经感到这里有一点问题了，在一个加密流中，泄露某一位的真实值其实很可能不安全。&lt;/p&gt;
+
+&lt;p&gt;在 ss 协议中，IV 几乎是定长的，而数据明文第一位的值为 1，3，4，必居其一。&lt;/p&gt;
+
+&lt;p&gt;由于加密前后的数据是等长的，显然，对应位的密文的 256 种情况必然一一对应明文的 256 种情况，换言之，保持 IV 不变，尝试 256 次就必然可以得到一次服务器认为 &lt;code class=&quot;highlighter-rouge&quot;&gt;TYPE&lt;/code&gt; 是 1 和 4 的情况，在&lt;code class=&quot;highlighter-rouge&quot;&gt;TYPE&lt;/code&gt; 是 1 和 4 时，服务器会尝试连接由后面的数据所给定的 IP 地址和端口，而任意的 6 或 18 Bytes 都构成了合法的请求。&lt;/p&gt;
+
+&lt;p&gt;在服务器收到不合法的请求的时候（&lt;code class=&quot;highlighter-rouge&quot;&gt;TYPE&lt;/code&gt; 不是 1，3，4）会直接断开，而接到之前提到的请求的时候会去尝试连接目标地址，这样只要保持 IV 不变，随机生成 18 Bytes 数据，第一位尝试 256 种可能（其他位完全无所谓）即可根据服务器的行为进行判断这是不是 ss 服务器了。&lt;/p&gt;
+
+&lt;p&gt;问题出在哪里呢？就出在 ss 的实现上，立刻断开和过一会断开的行为差异。&lt;/p&gt;
+
+&lt;p&gt;其实这个问题非常好解决，有两种办法：&lt;/p&gt;
+
+&lt;p&gt;第一个是：只要保证 ss 的行为对于合法和不合法请求没有差异即可。&lt;/p&gt;
+
+&lt;p&gt;在服务器接受到一个合法的伪造请求连接至随机的远程服务器时，有几种可能：&lt;/p&gt;
+&lt;ol&gt;
+  &lt;li&gt;连接成功。对于一个随机的地址和端口来说，非常不可能，可以忽略。&lt;/li&gt;
+  &lt;li&gt;RST。&lt;/li&gt;
+  &lt;li&gt;超时。这是最有可能的情况。&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;对于第二种，服务器会很快断开到客户端的连接，对于第三种，则会等的更久一些。&lt;/p&gt;
+
+&lt;p&gt;所以其实解决方案很简单，在发现请求非法时不要立刻断开，而是随机等待数秒后再进行断开即可。&lt;/p&gt;
+
+&lt;p&gt;第二个方法其实更简单也更根本，不使用 &lt;code class=&quot;highlighter-rouge&quot;&gt;TYPE&lt;/code&gt; 1 和 4，这样只要验证一下 &lt;code class=&quot;highlighter-rouge&quot;&gt;HOST&lt;/code&gt; 是不是合法的域名就可以了，而随机生成合法域名是非常困难的（并不是每一个ASCII都构成合法域名，何况你的 &lt;code class=&quot;highlighter-rouge&quot;&gt;HOST_LEN&lt;/code&gt; 也要合法）。只要规定 &lt;code class=&quot;highlighter-rouge&quot;&gt;HOST_LEN&lt;/code&gt; 和 &lt;code class=&quot;highlighter-rouge&quot;&gt;HOST&lt;/code&gt; 必然由一个 IP 包发来，事实上这也是几乎所有实现出于简化的假设，即可。&lt;/p&gt;
+
+&lt;p&gt;如果采用重放，二依然可能会有一点点问题，如果担心这种可能性存在，还是可以采用一。&lt;/p&gt;
+
+&lt;h2 id=&quot;所以它已经解决了&quot;&gt;所以它已经解决了？&lt;/h2&gt;
+
+&lt;p&gt;这两个简单的解决方案至今也没有被实现，反而有一种用新的问题来掩盖久问题的趋势出现。所以，这个问题还没有彻底解决，大家还可以继续撕一会儿。&lt;/p&gt;
+
+&lt;p&gt;回到最开始我们提到的安全性三个方面，Confidentiality 之前已经说了情况了，到底有没有问题大家自行考量， Integrity 可以说在设计之初就并没有列入考量（这并没有问题，我懒得展开了，但是篡改数据没有任何意义，感兴趣的同学可以查看这里的说明&lt;sup id=&quot;fnref:2&quot;&gt;&lt;a href=&quot;#fn:2&quot; class=&quot;footnote&quot;&gt;2&lt;/a&gt;&lt;/sup&gt;）， Authentication 其实是通过 &lt;code class=&quot;highlighter-rouge&quot;&gt;TYPE&lt;/code&gt; 来实现的，也是出问题的地方所在，但是即便如此，伪造的请求就和 hash 的碰撞一样，都是合法的随机样本，没有实际意义。&lt;/p&gt;
+
+&lt;p&gt;虽然简单混淆 Authentication 成功和失败的行为或者增加欺骗 Authentication 的成本即可解决问题，但是很显然这场大戏并不想就此停息，所以各方的算法层出不穷。我没有精力分析这些算法从 Integrity 和 Authentication 的角度是如何解决这个不存在的问题以及在此同时可能引入新的问题的，况且这并不是当前需要解决问题的关键所在。&lt;/p&gt;
+
+&lt;h2 id=&quot;另一个问题&quot;&gt;另一个问题&lt;/h2&gt;
+
+&lt;p&gt;IPv4 的地址有 \(2^{32}\) 个，每个 IP 的端口有 \(2^{16}\) 个，那么如果有人想要进行探测，他怎么知道要探测哪里去呢？显然不能是随机的，这就牵涉到一个问题， Obfuscation。&lt;/p&gt;
+
+&lt;p&gt;设想一下，你的电脑对一个服务器的某一非常见高端口进行大量主动链接，传输大量随机数据。&lt;/p&gt;
+
+&lt;p&gt;又或者，你的电脑连接至80或443或25端口，但传输显然不是 http， https 或是 smtp 的数据。&lt;/p&gt;
+
+&lt;p&gt;那么，作为通路中的一个时刻都在分析数据的节点，同学，这特征真的已经显著的不能再显著了好么。&lt;/p&gt;
+
+&lt;p&gt;特别是考虑到经常有很多不同的设备连接到这个服务器发送大量随机数据的情况，想不注意到你真的好难。&lt;/p&gt;
+
+&lt;p&gt;怎么办呢？&lt;/p&gt;
+
+&lt;p&gt;我们需要 Obfuscation， 将数据流伪装成另一种数据流（这并没有在理论上增加安全性）。&lt;/p&gt;
+
+&lt;p&gt;具体实现已经有了，虽然 ss 中似乎来来去去，我也搞不清楚情况，但在 ssr 中，如 http_simple 和 tls1.2_ticket_auth 等等通过在头部伪装成普通的 http 或 https 在一定程度上规避了这个问题。同时，在某些网络下可能还能通过欺骗 QoS 提升速度，不过这和本文无关了。&lt;/p&gt;
+
+&lt;h2 id=&quot;thats-all&quot;&gt;That’s all?&lt;/h2&gt;
+
+&lt;p&gt;Emmm…&lt;/p&gt;
+
+&lt;p&gt;其实特征并不只有请求的头部（http 头， SSL 握手），中间的每一个数据包的长度都可能在暗示着当前传输的内容。不过考虑到这所需要的运算资源和准确度，我实在不觉得有必要在意太多。要明白，行为本身的特征已经相当明显，而所有其他的流量混淆都必然增加 overhead，在我看来完全是得不偿失。&lt;/p&gt;
+
+&lt;h2 id=&quot;总结&quot;&gt;总结&lt;/h2&gt;
+
+&lt;p&gt;所以，ss 加密的问题我基本都已经写出来了，够不够安全大家可以自行判断；服务器有可能被探测，只要在实现上略作修改即可，但是似乎大家比较喜欢从理论上解决无人想去修正（虽然漏洞本身只是实现上的）。&lt;/p&gt;
+
+&lt;p&gt;至于， Obfuscation，如果 QoS 很有效可以考虑使用，其他时候也可以求个心理安慰吧。&lt;/p&gt;
+
+&lt;p&gt;写这篇文章的主要原因，并不是想要否定任何想要取得更高安全性的努力，只是想让讨论本身回复一个理性的状态。如果想说 ss “不安全”，至少先把究竟多不安全说清楚吧。&lt;/p&gt;
+
+&lt;div class=&quot;footnotes&quot;&gt;
+  &lt;ol&gt;
+    &lt;li id=&quot;fn:1&quot;&gt;
+      &lt;p&gt;https://trevan.co/dont-code-by-accident/ &lt;a href=&quot;#fnref:1&quot; class=&quot;reversefootnote&quot;&gt;&amp;#8617;&lt;/a&gt;&lt;/p&gt;
+    &lt;/li&gt;
+    &lt;li id=&quot;fn:2&quot;&gt;
+      &lt;p&gt;https://github.com/shadowsocks/shadowsocks-org/issues/64 &lt;a href=&quot;#fnref:2&quot; class=&quot;reversefootnote&quot;&gt;&amp;#8617;&lt;/a&gt;&lt;/p&gt;
+    &lt;/li&gt;
+  &lt;/ol&gt;
+&lt;/div&gt;
+</description>
+        <pubDate>Fri, 07 Apr 2017 11:12:29 +0800</pubDate>
+        <link>https://blog.zhuhaow.me/security/ss/2017/04/07/the-security-myth-of-some-network-tools/</link>
+        <guid isPermaLink="true">https://blog.zhuhaow.me/security/ss/2017/04/07/the-security-myth-of-some-network-tools/</guid>
+      </item>
+    
+  </channel>
+</rss>
